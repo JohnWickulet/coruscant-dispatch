@@ -8,7 +8,7 @@ public class Health extends Resource{
     @Override
     public void Resource_info(){
         System.out.println("Name: " + name);
-        System.out.println("Heal a soldier for " + value);
+        System.out.println("Heal a soldier for" + value + " state of health");
         System.out.println(flavor);
     }
 }

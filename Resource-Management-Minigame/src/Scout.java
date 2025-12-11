@@ -1,17 +1,16 @@
 
 public class Scout extends Soldier{
-    public Scout(String name,int health,int intelligence,int strength,int mobility,String flavor){
-        super(name,health,intelligence,strength,mobility,flavor);
+    public Scout(String name,int intelligence,int strength,int mobility,String flavor){
+        super(name,intelligence,strength,mobility,flavor);
     }
     @Override
     public void IncreaseStats(){
-        this.health+=3;
         this.intelligence+=1;
-        this.strength+=1;
-        this.mobility+=4;
+        this.strength+=0;
+        this.mobility+=3;
     }
     @Override
-    public void ability(){
+    public void ability(Squad squad){
         if(isExploring){
             this.intelligence++;
         }

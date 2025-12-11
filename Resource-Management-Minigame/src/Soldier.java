@@ -10,9 +10,9 @@ public abstract class Soldier {
     boolean isDead;
     boolean isExploring;
     String flavor;
-    public Soldier(String name,int health,int intelligence,int strength,int mobility,String flavor){
+    public Soldier(String name,int intelligence,int strength,int mobility,String flavor){
         this.name=name;
-        this.health=health;
+        this.health=2;
         this.intelligence=intelligence;
         this.strength=strength;
         this.mobility=mobility;
@@ -30,7 +30,7 @@ public abstract class Soldier {
         }
         else System.out.println("Insufficient xp!");
     }
-    abstract void ability();
+    abstract void ability(Squad squad);
     public void GetStatus(){
         if(!isDead) {
             System.out.println("Name: " + name);
@@ -38,7 +38,10 @@ public abstract class Soldier {
             System.out.println(xp + "/100 Exp");
             System.out.println(flavor);
             System.out.println("Stats: ");
-            System.out.println("Health: " + health);
+            switch(health){
+                case 2: System.out.println("This soldier is healthy");
+                case 1: System.out.println("This soldier is hurt");
+            }
             System.out.println("Intelligence: " + intelligence);
             System.out.println("Strength: " + strength);
             System.out.println("Mobility: " + mobility +"\n");

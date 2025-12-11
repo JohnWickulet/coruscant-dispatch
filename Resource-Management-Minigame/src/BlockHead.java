@@ -1,17 +1,16 @@
 
 public class BlockHead extends Soldier {
-    public BlockHead(String name,int health,int intelligence,int strength,int mobility,String flavor){
-        super(name,health,intelligence,strength,mobility,flavor);
+    public BlockHead(String name,int intelligence,int strength,int mobility,String flavor){
+        super(name,intelligence,strength,mobility,flavor);
     }
     @Override
     public void IncreaseStats(){
-        this.health+=5;
-        this.intelligence+=1;
-        this.strength+=3;
+        this.intelligence+=0;
+        this.strength+=2;
         this.mobility+=2;
     }
     @Override
-    public void ability(){
+    public void ability(Squad Squad){
         if(isExploring){
             this.strength++;
         }

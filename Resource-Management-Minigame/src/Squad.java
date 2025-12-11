@@ -32,10 +32,8 @@ public class Squad {
         for(Soldier soldier:soldiers){
             if(soldier!=null && !soldier.isDead){
                 if(soldier.isExploring){
-                    System.out.println(soldier.name + " has returned!\n");
                     soldier.isExploring=false;}
                 if(soldier.health<0){
-                    System.out.println(soldier.name + " has died...\n");
                     soldier.isDead=true;}
             }
         }

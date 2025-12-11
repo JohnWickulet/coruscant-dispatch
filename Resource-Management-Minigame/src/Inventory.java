@@ -13,7 +13,7 @@ public class Inventory {
     }
     public void Add_To_Inventory(Resource resource){
         if(amount<10){
-            inventory[amount]=resource;
+            inventory[amount++]=resource;
         }
         else System.out.println("Inventory full! Please discard an item");
     }
