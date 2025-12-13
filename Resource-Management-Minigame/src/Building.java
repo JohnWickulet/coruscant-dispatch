@@ -12,12 +12,15 @@ public class Building extends Location{
         int dice_strength=r.nextInt(2*day);
         int dice_mobility=r.nextInt(2*day);
         int check_hurt=soldier.health;
-        if(soldier.strength>dice_strength){
+        if(soldier.strength>=dice_strength){
             if(soldier.mobility<dice_mobility){
                 soldier.health--;
             }
         }
-        else soldier.health--;
+        else {
+            soldier.health--;
+            return null;
+        }
         if(soldier.health<=0){
             System.out.println(soldier.name + " died while exploring...");
             return null;

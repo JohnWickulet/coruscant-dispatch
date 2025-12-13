@@ -7,4 +7,6 @@ public abstract class Resource {
         this.flavor=flavor;
     }
     public abstract void Resource_info();
+    public abstract void Use(Soldier soldier);
+    public abstract boolean Valid_Use(Soldier soldier);
 }

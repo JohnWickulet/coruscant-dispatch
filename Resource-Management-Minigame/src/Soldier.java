@@ -35,13 +35,11 @@ public abstract class Soldier {
         if(!isDead) {
             System.out.println("Name: " + name);
             System.out.println("Level: " + level);
+            if(health==2) System.out.println("This soldier is healthy");
+            if(health==1) System.out.println("This soldier is hurt");
             System.out.println(xp + "/100 Exp");
             System.out.println(flavor);
             System.out.println("Stats: ");
-            switch(health){
-                case 2: System.out.println("This soldier is healthy");
-                case 1: System.out.println("This soldier is hurt");
-            }
             System.out.println("Intelligence: " + intelligence);
             System.out.println("Strength: " + strength);
             System.out.println("Mobility: " + mobility +"\n");
