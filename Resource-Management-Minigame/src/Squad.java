@@ -2,7 +2,7 @@
 public class Squad {
     Soldier[] soldiers=new Soldier[4];
     Commander commander=new Commander(null,null);
-    Inventory inventory=new Inventory();
+    Inventory inventory=new Inventory(5);
     int current_size;
     public Squad(){
         this.current_size=0;
@@ -28,14 +28,9 @@ public class Squad {
     public void Check_Inventory(){
         inventory.Check_Inventory();
     }
-    public void change_status(){
-        for(Soldier soldier:soldiers){
-            if(soldier!=null && !soldier.isDead){
-                if(soldier.isExploring){
-                    soldier.isExploring=false;}
-                if(soldier.health<0){
-                    soldier.isDead=true;}
-            }
+    public void Ability(Soldier tbu){
+        for(int i=0;i<current_size;i++){
+            soldiers[i].ability(tbu);
         }
     }
 }

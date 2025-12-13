@@ -5,13 +5,13 @@ public class BlockHead extends Soldier {
     }
     @Override
     public void IncreaseStats(){
-        this.intelligence+=0;
         this.strength+=2;
         this.mobility+=2;
     }
     @Override
-    public void ability(Squad Squad){
-        if(isExploring){
+    public void ability(Soldier soldier){
+        if(soldier instanceof BlockHead){
+            System.out.println(name + " is pumped up!");
             this.strength++;
         }
     }

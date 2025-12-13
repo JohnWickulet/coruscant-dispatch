@@ -6,13 +6,13 @@ public class Scout extends Soldier{
     @Override
     public void IncreaseStats(){
         this.intelligence+=1;
-        this.strength+=0;
         this.mobility+=3;
     }
     @Override
-    public void ability(Squad squad){
-        if(isExploring){
-            this.intelligence++;
+    public void ability(Soldier soldier){
+        if(!(soldier instanceof Scout)) {
+            System.out.println(name + " guides " + soldier.name + " from afar...");
+            soldier.intelligence++;
         }
     }
 }

@@ -7,23 +7,13 @@ public class Medic extends Soldier{
     @Override
     public void IncreaseStats(){
         this.intelligence+=1;
-        this.strength+=0;
         this.mobility+=1;
     }
     @Override
-    public void ability(Squad squad){
-        if(isExploring){
-            Random r=new Random();
-            int select=r.nextInt()%squad.current_size-1;
-            int medicindex=0;
-            for(int i=0;i<squad.current_size;i++){
-                if(squad.soldiers[i] instanceof Medic){
-                    medicindex=i;
-                }
-            }
-            while(select==medicindex){
-                medicindex=r.nextInt()%squad.current_size-1;
-            }
+    public void ability(Soldier soldier){
+        if(soldier.health<2 && !(soldier instanceof Medic)){
+            System.out.println(name + " healed " + soldier.name);
+            soldier.heal();
         }
     }
 }

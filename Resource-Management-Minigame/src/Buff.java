@@ -10,12 +10,12 @@ public class Buff extends Resource{
     }
     @Override
     public void Resource_info(){
-        System.out.println("Name: " + name);
+        System.out.println("\nName: " + name);
         System.out.println(flavor);
         if(intelligence>0) System.out.println("Increase a soldier's intelligence by " + intelligence);
         if(strength>0) System.out.println("Increase a soldier's strength by " + strength);
         if(mobility>0) System.out.println("Increase a soldier's mobility by " + mobility);
-
+        System.out.println();
     }
     @Override
     public void Use(Soldier soldier){
