@@ -1,12 +1,8 @@
-
 public abstract class Resource {
-    String name;
-    String flavor;
-    public Resource(String name,String flavor){
-        this.name=name;
-        this.flavor=flavor;
-    }
-    public abstract void Resource_info();
-    public abstract void Use(Soldier soldier);
-    public abstract boolean Valid_Use(Soldier soldier);
+
+    public String name;
+    public String description;
+    public int quantity = 1;
+
+    public abstract void use(Soldier s);
 }
