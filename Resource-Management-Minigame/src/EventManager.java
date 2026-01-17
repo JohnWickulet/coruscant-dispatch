@@ -7,6 +7,8 @@ public class EventManager {
     private final double spawnInterval; // seconds between spawns
     private double spawnTimer;          // countdown until next spawn
     private final Random rng;
+    private static final int map_width = 1000;
+    private static final int map_height = 900;
 
     public EventManager(Game game, GalaxyMapPanel map, double spawnIntervalSeconds) {
         this.game = game;
@@ -21,32 +23,31 @@ public class EventManager {
         if (spawnTimer <= 0) {
             spawnTimer = spawnInterval;
             Location loc = LocationFactory.getRandomLocation(game.getSuccess());
-            // Spawn a new event
-            Event newEvent = generateProgressiveEvent(loc); // or random event
+            java.awt.Point p = loc.getRandomPointInside();
+            Event newEvent = generateProgressiveEvent(loc,p.x,p.y);
             game.addEvent(newEvent);
 
             EventCard card = new EventCard(newEvent);
             map.addEvent(card);
         }
     }
-    private Event generateProgressiveEvent(Location loc) {
+    private Event generateProgressiveEvent(Location loc,int x,int y) {
         int s = game.getSuccess();
         int choice = rng.nextInt(100);
-
-
         if (s < 5) {
-            return new Inspection(loc);
+            if(choice<60) return new Inspection(loc,x,y);
+            return new BodyGuard(loc,x,y);
         }
-
         else if (s < 15) {
-            if (choice < 60) return new Inspection(loc);
-            else return new Assassination(loc);
+            if (choice < 40) return new Inspection(loc,x,y);
+            if(choice < 80) return new BodyGuard(loc,x,y);
+            else return new Assassination(loc,x,y);
         }
-        // Late-game: High-stakes events
         else {
-            if (choice < 30) return new Inspection(loc);
-            if (choice < 70) return new Assassination(loc);
-            return new RebelSabotage(loc); // Hardest event
+            if (choice < 30) return new Inspection(loc,x,y);
+            if (choice < 60) return new BodyGuard(loc,x,y);
+            if (choice < 80) return new Assassination(loc,x,y);
+            return new RebelSabotage(loc,x,y);
         }
     }
 }

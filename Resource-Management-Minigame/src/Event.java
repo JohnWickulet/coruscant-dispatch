@@ -1,27 +1,31 @@
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public abstract class Event {
 
     public enum State { AVAILABLE, IN_PROGRESS, RESOLVED, EXPIRED }
-
     public String name, description;
+    public int x,y;
     public Location location;
     public double duration, timeDeploy, timeLeft, linger = 1;
     public boolean remove = false;
     public int maxDeploy, checks_required;
     public int reqStrength, reqMobility, reqIntelligence, reqStealth, reqCharisma;
-
+    protected List<String> statPref= new ArrayList<String>();
     protected List<Soldier> deployed;
     protected State state = State.AVAILABLE;
     private static final Random rand = new Random();
+    protected boolean success = false;
 
-    public Event(String name, String description, Location location,
+    public Event(String name, String description, Location location,int x,int y,
                  double duration, double timeDeploy, int maxDeploy, int checks_required,
                  int STRENGTH, int MOBILITY, int INTELLIGENCE, int STEALTH, int CHARISMA) {
         this.name = name;
         this.description = description;
         this.location = location;
+        this.x=x;
+        this.y=y;
         this.duration = duration;
         this.timeDeploy = timeDeploy;
         this.timeLeft = timeDeploy;
@@ -70,13 +74,19 @@ public abstract class Event {
         if (reqMobility > 0 && statSum(Stat.MOBILITY) >= rand.nextInt(reqMobility + 1)) check_success++;
         if (reqStealth > 0 && statSum(Stat.STEALTH) >= rand.nextInt(reqStealth + 1)) check_success++;
 
-        boolean success = check_success >= checks_required;
+        success = check_success >= checks_required;
 
-        if (success) onSuccess(game,deployed);
+        if (success) {onSuccess(game,deployed);
+            }
         else onFailure(game,deployed);
 
         for (Soldier s : deployed) s.endMission();
         state = State.RESOLVED;
+        remove=true;
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 
     public int statSum(Stat stat) {

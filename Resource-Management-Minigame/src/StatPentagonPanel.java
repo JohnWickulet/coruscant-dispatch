@@ -4,6 +4,7 @@ import java.awt.*;
 public class StatPentagonPanel extends JPanel {
 
     private final Soldier soldier;
+    private Soldier previewSoldier; // NEW: The potential promoted soldier
 
     private final double[] displayStats = new double[5];
     private final int[] targetStats = new int[5];
@@ -11,18 +12,22 @@ public class StatPentagonPanel extends JPanel {
     private Timer animationTimer;
 
     private static final int MAX_STAT = 10;
-    private static final int ANIM_DURATION = 250; // ms
+    private static final int ANIM_DURATION = 250;
     private static final int FPS = 60;
 
     public StatPentagonPanel(Soldier soldier) {
         this.soldier = soldier;
         setPreferredSize(new Dimension(260, 260));
-        setBackground(Color.WHITE);
-
+        setBackground(new Color(30, 30, 30)); // Dark background for contrast
         syncWithSoldier();
     }
 
-    /** Call whenever stats change */
+    /** Set the promoted soldier to show the ghost outline */
+    public void setPreview(Soldier preview) {
+        this.previewSoldier = preview;
+        repaint();
+    }
+
     private void syncWithSoldier() {
         targetStats[0] = soldier.strength;
         targetStats[1] = soldier.mobility;
@@ -41,23 +46,14 @@ public class StatPentagonPanel extends JPanel {
         animationTimer = new Timer(1000/FPS, e -> {
             frame[0]++;
             double t = Math.min(1.0, frame[0] / (double) frames);
-
-            // Ease-out cubic
             double ease = 1 - Math.pow(1 - t, 3);
 
             for (int i = 0; i < 5; i++) {
-                displayStats[i] =
-                        startStats[i] +
-                                (targetStats[i] - startStats[i]) * ease;
+                displayStats[i] = startStats[i] + (targetStats[i] - startStats[i]) * ease;
             }
-
             repaint();
-
-            if (t >= 1.0) {
-                animationTimer.stop();
-            }
+            if (t >= 1.0) animationTimer.stop();
         });
-
         animationTimer.start();
     }
 
@@ -66,20 +62,14 @@ public class StatPentagonPanel extends JPanel {
         super.paintComponent(g);
 
         Graphics2D g2 = (Graphics2D) g;
-        g2.setRenderingHint(
-                RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON
-        );
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         int cx = getWidth() / 2;
         int cy = getHeight() / 2;
         int maxRadius = 95;
 
-        String[] labels = {"STR", "MOB", "INT", "STL", "CHA"};
-
-        g2.setColor(new Color(210, 210, 210));
-
-        // Radial lines
+        // --- 1. RADIAL LINES ---
+        g2.setColor(new Color(100, 100, 100));
         for (int i = 0; i < 5; i++) {
             double angle = Math.toRadians(-90 + i * 72);
             int x = cx + (int) (Math.cos(angle) * maxRadius);
@@ -87,60 +77,66 @@ public class StatPentagonPanel extends JPanel {
             g2.drawLine(cx, cy, x, y);
         }
 
-        // Concentric pentagons (1–10)
-        for (int level = 2; level < MAX_STAT; level+=2) {
+        // --- 2. CONCENTRIC PENTAGONS (The Grid) ---
+        g2.setColor(new Color(70, 70, 70));
+        for (int level = 2; level <= MAX_STAT; level += 2) {
             double ratio = level / (double) MAX_STAT;
-
             int[] gx = new int[5];
             int[] gy = new int[5];
-
             for (int i = 0; i < 5; i++) {
                 double angle = Math.toRadians(-90 + i * 72);
                 gx[i] = cx + (int) (Math.cos(angle) * maxRadius * ratio);
                 gy[i] = cy + (int) (Math.sin(angle) * maxRadius * ratio);
             }
-
             g2.drawPolygon(gx, gy, 5);
         }
 
-        /* ===== MAX OUTLINE ===== */
-        int[] maxX = new int[5];
-        int[] maxY = new int[5];
+        // --- 3. PREVIEW STATS (Dashed Gold Outline) ---
+        if (previewSoldier != null) {
+            int[] px = new int[5];
+            int[] py = new int[5];
+            int[] pVals = {previewSoldier.strength, previewSoldier.mobility,
+                    previewSoldier.intelligence, previewSoldier.stealth, previewSoldier.charisma};
 
-        for (int i = 0; i < 5; i++) {
-            double angle = Math.toRadians(-90 + i * 72);
-            maxX[i] = cx + (int) (Math.cos(angle) * maxRadius);
-            maxY[i] = cy + (int) (Math.sin(angle) * maxRadius);
+            for (int i = 0; i < 5; i++) {
+                double angle = Math.toRadians(-90 + i * 72);
+                double ratio = pVals[i] / (double) MAX_STAT;
+                px[i] = cx + (int) (Math.cos(angle) * maxRadius * ratio);
+                py[i] = cy + (int) (Math.sin(angle) * maxRadius * ratio);
+            }
+
+            g2.setColor(new Color(255, 215, 0, 60)); // Translucent gold fill
+            g2.fillPolygon(px, py, 5);
+
+            g2.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4}, 0));
+            g2.setColor(new Color(255, 215, 0, 200)); // Gold dashed border
+            g2.drawPolygon(px, py, 5);
+            g2.setStroke(new BasicStroke(1f)); // Reset stroke
         }
 
-        g2.setColor(new Color(200, 200, 200));
-        g2.drawPolygon(maxX, maxY, 5);
-
-        /* ===== CURRENT STATS ===== */
+        // --- 4. CURRENT STATS (Animated Blue) ---
         int[] x = new int[5];
         int[] y = new int[5];
-
         for (int i = 0; i < 5; i++) {
             double angle = Math.toRadians(-90 + i * 72);
             double ratio = displayStats[i] / MAX_STAT;
-
             x[i] = cx + (int) (Math.cos(angle) * maxRadius * ratio);
             y[i] = cy + (int) (Math.sin(angle) * maxRadius * ratio);
         }
 
         g2.setColor(new Color(80, 130, 255, 160));
         g2.fillPolygon(x, y, 5);
-
-        g2.setColor(new Color(30, 60, 150));
+        g2.setColor(new Color(150, 180, 255));
         g2.drawPolygon(x, y, 5);
 
-        /* ===== LABELS ===== */
+        // --- 5. LABELS ---
+        String[] labels = {"STR", "MOB", "INT", "STL", "CHA"};
         g2.setFont(new Font("Arial", Font.BOLD, 12));
-        g2.setColor(Color.BLACK);
-
+        g2.setColor(Color.WHITE);
         for (int i = 0; i < 5; i++) {
-            int lx = cx + (int) (Math.cos(Math.toRadians(-90 + i * 72)) * (maxRadius + 18));
-            int ly = cy + (int) (Math.sin(Math.toRadians(-90 + i * 72)) * (maxRadius + 18));
+            double angle = Math.toRadians(-90 + i * 72);
+            int lx = cx + (int) (Math.cos(angle) * (maxRadius + 20));
+            int ly = cy + (int) (Math.sin(angle) * (maxRadius + 20));
             g2.drawString(labels[i], lx - 10, ly + 5);
         }
     }

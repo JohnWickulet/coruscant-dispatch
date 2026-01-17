@@ -22,6 +22,7 @@ public class Game {
         squad.addSoldier(new ImperialTrooper("TK-421"));
         squad.addSoldier(new ImperialTrooper("FN-2187"));
         squad.addSoldier(new ImperialTrooper("CT-9904"));
+        squad.addSoldier(new ImperialTrooper("CT-555"));
     }
 
     // Unified tick
@@ -74,11 +75,5 @@ public class Game {
 
     public List<Event> getActiveEvents(){
         return activeEvents;
-    }
-
-    public void clearEvents(){
-        for(Event e:activeEvents){
-            activeEvents.remove(e);
-        }
     }
 }

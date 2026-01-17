@@ -1,13 +1,13 @@
 import java.util.List;
 
 public class Assassination extends Event {
-    public Assassination(Location location) {
-        super("Target Assassination","Imperial intelligence has found a traitor in " + location.name + ". Send someone to execute them swiftly and unseen"
-                ,location,10,20,1,3,
+    public Assassination(Location location,int x,int y) {
+        super("Target Assassination","Imperial intelligence has found a traitor located in the " + location.name + ". Send someone to execute them as a reminder that the Empire sees all."
+                ,location,x,y,10,20,1,3,
                 2,3,2,3,0);
+        statPref.add("Send someone to who can eliminate the target swiftly while also remaining unseen");
+        statPref.add("Make sure they can handle tha target in case it resists");
     }
-
-    // Called when player deploys soldiers
 
     @Override
     public void onSuccess(Game game,List<Soldier> deployed) {

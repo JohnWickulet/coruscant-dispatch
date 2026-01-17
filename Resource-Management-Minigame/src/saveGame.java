@@ -12,8 +12,9 @@ public class saveGame {
             saveGameStats(conn, profileId, game);
             saveInventory(conn, profileId, game.inventory);
 
-            saveEvents(conn, profileId, game.getActiveEvents());
             saveSoldiers(conn, profileId, game.squad.soldiers);
+            saveEvents(conn, profileId, game.getActiveEvents());
+
 
             conn.commit();
         } catch (SQLException e) {
@@ -64,10 +65,12 @@ public class saveGame {
         }
 
         // 2. If not, insert it (Static data for the universe)
-        String insert = "INSERT INTO locations (name, danger_level) VALUES (?, ?) RETURNING location_id";
+        String insert = "INSERT INTO locations (name, danger_level, center_x, center_y) VALUES (?, ?, ?, ?) RETURNING location_id";
         try (PreparedStatement ps = conn.prepareStatement(insert)) {
             ps.setString(1, loc.name);
             ps.setDouble(2, loc.getDiff());
+            ps.setInt(3,loc.centerX);
+            ps.setInt(4,loc.centerY);
             ResultSet rs = ps.executeQuery();
             rs.next();
             return rs.getInt(1);
@@ -89,7 +92,8 @@ public class saveGame {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, pId);
                 ps.setString(2, s.name);
-                ps.setString(3, s.troopClass.name());
+                String format= s.troopClass.name().replace("_"," ");
+                ps.setString(3, format);
                 ps.setInt(4, s.strength);
                 ps.setInt(5, s.mobility);
                 ps.setInt(6, s.intelligence);
@@ -109,47 +113,53 @@ public class saveGame {
     }
 
     private static void saveEvents(Connection conn, int pId, List<Event> events) throws SQLException {
-        // Clear old deployments and events
+        // Cascade deletion handled via execution order or DB constraints
         executeDelete(conn, "DELETE FROM event_deployments WHERE event_id IN (SELECT id FROM active_events WHERE profile_id = ?)", pId);
         executeDelete(conn, "DELETE FROM active_events WHERE profile_id = ?", pId);
 
-        String sqlEv = "INSERT INTO active_events (profile_id, event_type, event_name, location_id, time_left, state) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
-        String sqlDep = "INSERT INTO event_deployments (event_id, soldier_id) VALUES (?, ?)";
+        // Updated SQL to include map_x and map_y
+        String sqlEv = "INSERT INTO active_events (profile_id, event_type, event_name, location_id, time_left, state, map_x, map_y) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
 
         for (Event e : events) {
-            // Look up the ID for the location object
             int locId = getOrInsertLocation(conn, e.location);
 
             int eventId;
             try (PreparedStatement ps = conn.prepareStatement(sqlEv)) {
                 ps.setInt(1, pId);
-                // Saves: Inspection, Assassination, or Sabotage
                 ps.setString(2, e.getClass().getSimpleName().replace("Rebel", "").replace("Event", ""));
                 ps.setString(3, e.name);
-                ps.setInt(4, locId); // FK to locations table
+                ps.setInt(4, locId);
                 ps.setDouble(5, e.timeLeft);
                 ps.setString(6, e.state.name());
+                ps.setInt(7, e.x);
+                ps.setInt(8, e.y);
 
                 ResultSet rs = ps.executeQuery();
                 rs.next();
                 eventId = rs.getInt(1);
             }
 
-            if (e.deployed != null) {
-                for (Soldier s : e.deployed) {
-                    if (s.getDatabaseId() > 0) { // Safety check for promoted soldiers
-                        try (PreparedStatement psDep = conn.prepareStatement(sqlDep)) {
-                            psDep.setInt(1, eventId);
-                            psDep.setInt(2, s.getDatabaseId());
-                            psDep.executeUpdate();
-                        }
-                    }
-                }
+            if (e.deployed != null && !e.deployed.isEmpty()) {
+                saveSoldierLinks(conn, eventId, e.deployed);
             }
         }
     }
 
-    // --- HELPER METHODS (LOAD) ---
+    private static void saveSoldierLinks(Connection conn, int eventId, List<Soldier> deployedSoldiers) throws SQLException {
+        String sqlDep = "INSERT INTO event_deployments (event_id, soldier_id) VALUES (?, ?)";
+
+        for (Soldier s : deployedSoldiers) {
+            // Only link if the soldier has been saved and has a valid database ID
+            if (s.getDatabaseId() > 0) {
+                try (PreparedStatement psDep = conn.prepareStatement(sqlDep)) {
+                    psDep.setInt(1, eventId);
+                    psDep.setInt(2, s.getDatabaseId());
+                    psDep.executeUpdate();
+                }
+            }
+        }
+    }
 
     private void loadSoldiers(Connection conn, int pId, Game g, Map<Integer, Soldier> map) throws SQLException {
         String sql = "SELECT * FROM soldiers WHERE profile_id = ?";
@@ -160,7 +170,9 @@ public class saveGame {
 
                 while (rs.next()) {
                     // 1. Use your factory to create the specific subclass instance
-                    Soldier s = SoldierFactory.create(rs.getString("troop_class"), rs.getString("name"));
+                    String dbClass=rs.getString("troop_class");
+                    String gameClass=dbClass.replace(" ","_");
+                    Soldier s = SoldierFactory.create(gameClass, rs.getString("name"));
 
                     // 2. Map standard stats
                     s.setDatabaseId(rs.getInt("id"));
@@ -187,8 +199,8 @@ public class saveGame {
     }
 
     private void loadEvents(Connection conn, int pId, Game g, Map<Integer, Soldier> lookup) throws SQLException {
-        // 1. Get all events for this profile
-        String sqlEvent = "SELECT e.*, l.name as loc_name, l.danger_level " +
+        // Updated query to select map_x and map_y
+        String sqlEvent = "SELECT e.*, l.name as loc_name, l.danger_level, l.center_x, l.center_y " +
                 "FROM active_events e " +
                 "JOIN locations l ON e.location_id = l.location_id " +
                 "WHERE e.profile_id = ?";
@@ -198,41 +210,37 @@ public class saveGame {
             ResultSet rsEv = stmtEv.executeQuery();
 
             while (rsEv.next()) {
-                Location loc = new Location(rsEv.getString("loc_name"), rsEv.getDouble("danger_level"));
-                Event e = EventFactory.create(
-                        rsEv.getString("event_type"),
-                        loc
-                );
+                // Extract coordinates from DB
+                int x = rsEv.getInt("map_x");
+                int y = rsEv.getInt("map_y");
+
+                Location loc = new Location(rsEv.getString("loc_name"), rsEv.getDouble("danger_level"),rsEv.getInt("center_x"),rsEv.getInt("center_y"));
+
+                // Pass coordinates to factory
+                Event e = EventFactory.create(rsEv.getString("event_type"), loc, x, y);
+                if (e == null) continue;
 
                 e.timeLeft = rsEv.getDouble("time_left");
                 int eventId = rsEv.getInt("id");
 
-                // 3. Fetch the ID of every soldier assigned to THIS specific event
+                // Reconstruct deployments
                 List<Soldier> deployedForThisEvent = new ArrayList<>();
                 String sqlDep = "SELECT soldier_id FROM event_deployments WHERE event_id = ?";
 
                 try (PreparedStatement stmtDep = conn.prepareStatement(sqlDep)) {
                     stmtDep.setInt(1, eventId);
                     ResultSet rsDep = stmtDep.executeQuery();
-
                     while (rsDep.next()) {
-                        int sId = rsDep.getInt("soldier_id");
-                        // 4. IMPORTANT: Grab the ALREADY LOADED soldier from the map
-                        Soldier s = lookup.get(sId);
-                        if (s != null) {
-                            deployedForThisEvent.add(s);
-                        }
+                        Soldier s = lookup.get(rsDep.getInt("soldier_id"));
+                        if (s != null) deployedForThisEvent.add(s);
                     }
                 }
 
-                // 5. Re-attach the soldiers to the event
                 if (!deployedForThisEvent.isEmpty()) {
                     e.deploy(deployedForThisEvent);
-                    // Manually fix the state if the deploy() method resets the timer
-                    e.timeLeft = rsEv.getDouble("time_left");
+                    e.timeLeft = rsEv.getDouble("time_left"); // Reset time after deploy() logic
                 }
 
-                // 6. Add the fully reconstructed event to the game
                 g.addEvent(e);
             }
         }
@@ -276,12 +284,16 @@ public class saveGame {
     }
 
     private static void saveInventory(Connection conn, int pId, Inventory inv) throws SQLException {
-        String sql = "INSERT INTO inventory (profile_id, item_name, quantity) VALUES (?, ?, ?) " +
-                "ON CONFLICT (profile_id, item_name) DO UPDATE SET quantity = EXCLUDED.quantity";
+        // Clean old inventory for this profile
+        executeDelete(conn, "DELETE FROM inventory WHERE profile_id = ?", pId);
+
+        String sql = "INSERT INTO inventory (profile_id, item_id, quantity) " +
+                "VALUES (?, (SELECT item_id FROM item_definitions WHERE name = ?), ?)";
+
         for (Map.Entry<ItemType, Integer> entry : inv.getAll().entrySet()) {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, pId);
-                ps.setString(2, entry.getKey().name());
+                ps.setString(2, entry.getKey().name()); // Using the Enum name to find the ID
                 ps.setInt(3, entry.getValue());
                 ps.executeUpdate();
             }
@@ -289,13 +301,17 @@ public class saveGame {
     }
 
     private void loadInventory(Connection conn, int pId, Inventory inv) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM inventory WHERE profile_id = ?")) {
+        String sql = "SELECT d.name, i.quantity FROM inventory i " +
+                "JOIN item_definitions d ON i.item_id = d.item_id " +
+                "WHERE i.profile_id = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, pId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                ItemType type = ItemType.valueOf(rs.getString("item_name"));
+                ItemType type = ItemType.valueOf(rs.getString("name"));
                 int qty = rs.getInt("quantity");
-                for(int i=0; i<qty; i++) inv.add(type);
+                for(int i = 0; i < qty; i++) inv.add(type);
             }
         }
     }

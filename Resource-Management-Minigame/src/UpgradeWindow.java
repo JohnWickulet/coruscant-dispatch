@@ -46,7 +46,7 @@ public class UpgradeWindow extends GameWindow implements UpgradeListener {
         portraitLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JLabel nameLabel = new JLabel(
-                soldier.name + "\n" + soldier.troopClass,
+                soldier.name,
                 SwingConstants.CENTER
         );
         nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 14f));
@@ -61,67 +61,71 @@ public class UpgradeWindow extends GameWindow implements UpgradeListener {
 
     private void refreshCenter() {
         centerPanel.removeAll();
-        // Left: Soldier Info + Promotion Button
-        JPanel infoWithPromotion = new JPanel();
-        infoWithPromotion.setLayout(new BorderLayout(10, 10));
-        JPanel portraitPanel = new JPanel(new BorderLayout(5,5));
 
-        JLabel nameLabel = new JLabel(
-                activeSoldier.name + "\n" + activeSoldier.troopClass,
-                SwingConstants.CENTER
-        );
+        // --- LEFT COLUMN: Info & Promotion Buttons ---
+        JPanel infoWithPromotion = new JPanel(new BorderLayout(10, 10));
         portraitContainer = new JPanel(new BorderLayout());
         portraitContainer.add(buildPortraitComponent(activeSoldier), BorderLayout.CENTER);
-
         infoWithPromotion.add(portraitContainer, BorderLayout.CENTER);
 
+        // Vertical stack for all available promotion branches
+        JPanel promotionButtonsPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        promotionButtonsPanel.setOpaque(false);
 
-        // Promotion button
-        JButton promoteBtn = new JButton();
-        promoteBtn.setFont(promoteBtn.getFont().deriveFont(Font.BOLD, 12f));
-        promoteBtn.setBackground(new Color(80, 80, 120));
-        promoteBtn.setForeground(Color.WHITE);
+        List<TroopClass> possiblePromotions = UpgradeRegistry.getAvailablePromotions(activeSoldier.troopClass, activeSoldier.level);
 
-        TroopClass nextClass = UpgradeRegistry.getNextTroopClass(activeSoldier.troopClass, activeSoldier.level);
-        if (nextClass != null && activeSoldier.canPromote(nextClass) && activeSoldier.isAvailable()) {
-            promoteBtn.setText("Promote to " + nextClass);
-            promoteBtn.setEnabled(true);
-            promoteBtn.addActionListener(e -> {
-                Soldier promoted = activeSoldier.promoteTo(nextClass);
-                squad.replaceSoldier(activeSoldier, promoted);
-                activeSoldier = promoted;
-
-                //Update portrait immediately
-                portraitContainer.removeAll();
-                portraitContainer.add(buildPortraitComponent(activeSoldier), BorderLayout.CENTER);
-                portraitContainer.revalidate();
-                portraitContainer.repaint();
-
-                //Update rest of UI
-                listenerRefresh();
-                gameUi.getSoldierPanel().rebuildCards();
-            });
-
-        } else {
-            if(!activeSoldier.isAvailable()){
-                promoteBtn.setText("Busy");
-            }
-            else {
-                promoteBtn.setText("No Promotion Available");
-            }
-            promoteBtn.setEnabled(false);
-        }
-
-        infoWithPromotion.add(promoteBtn, BorderLayout.SOUTH);
-
-        // Center: UpgradePanel
-        UpgradePanel upgradePanel = new UpgradePanel(activeSoldier, this);
-        if(!activeSoldier.isAvailable()){
-            upgradePanel.setEnabled(false);
-        }
-        // Right: StatPentagon
+        // --- RIGHT COLUMN: StatPentagon ---
         StatPentagonPanel statPanel = new StatPentagonPanel(activeSoldier);
 
+        if (!possiblePromotions.isEmpty() && activeSoldier.isAvailable()) {
+            for (TroopClass nextClass : possiblePromotions) {
+                JButton promoteBtn = new JButton("Promote to " + nextClass);
+                promoteBtn.setFont(promoteBtn.getFont().deriveFont(Font.BOLD, 12f));
+                promoteBtn.setBackground(Color.BLACK);
+                promoteBtn.setForeground(Color.WHITE);
+
+                // Preview logic (Phantom soldier)
+                Soldier previewSoldier = activeSoldier.promoteTo(nextClass);
+
+                promoteBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseEntered(java.awt.event.MouseEvent evt) {
+                        statPanel.setPreview(previewSoldier);
+                    }
+                    public void mouseExited(java.awt.event.MouseEvent evt) {
+                        statPanel.setPreview(null);
+                    }
+                });
+
+                // INSTANT PROMOTION (No confirmation dialog)
+                promoteBtn.addActionListener(e -> {
+                    Soldier promoted = activeSoldier.promoteTo(nextClass);
+                    squad.replaceSoldier(activeSoldier, promoted);
+                    activeSoldier = promoted;
+
+                    // Immediate UI Refresh
+                    listenerRefresh();
+                    if (gameUi.getSoldierPanel() != null) {
+                        gameUi.getSoldierPanel().rebuildCards();
+                    }
+                });
+
+                promotionButtonsPanel.add(promoteBtn);
+            }
+        } else {
+            // Show status if no promotions are possible
+            String reason = (!activeSoldier.isAvailable()&&!possiblePromotions.isEmpty()) ? "Troop is busy" : "No promotion available";
+            JButton disabledBtn = new JButton(reason);
+            disabledBtn.setEnabled(false);
+            promotionButtonsPanel.add(disabledBtn);
+        }
+
+        infoWithPromotion.add(promotionButtonsPanel, BorderLayout.SOUTH);
+
+        // --- CENTER COLUMN: Upgrade Panel ---
+        UpgradePanel upgradePanel = new UpgradePanel(activeSoldier, this);
+        if(!activeSoldier.isAvailable()) upgradePanel.setEnabled(false);
+
+        // Final Assembly
         centerPanel.add(infoWithPromotion);
         centerPanel.add(upgradePanel);
         centerPanel.add(statPanel);

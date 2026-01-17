@@ -1,13 +1,15 @@
 import java.util.List;
 
 public class RebelSabotage extends Event {
-    public RebelSabotage(Location location) {
+    public RebelSabotage(Location location,int x,int y) {
         super("Rebel Sabotage","We have acquired insider information about a potential rebel sabotage on " + location.name + ". Send some troops to ensure the rebels rethink their plan."
-                ,location,10,20,2,2,
-                6,4,3,0,0);
+                ,location,x,y,10,20,4,3,
+                6,4,3,2,0);
+        statPref.add("Bring as much muscle as possible and do it fast.");
+        statPref.add("Make sure to secure all entry points");
     }
 
-    // Called when player deploys soldiers
+
 
     @Override
     public void onSuccess(Game game,List<Soldier> deployed) {

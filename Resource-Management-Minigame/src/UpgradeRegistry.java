@@ -7,16 +7,18 @@ public class UpgradeRegistry {
 
     static {
         // Define your promotions
-        upgrades.add(new TroopUpgrade(TroopClass.IMPERIALTROOPER, TroopClass.STORMTROOPER, 3));
-        upgrades.add(new TroopUpgrade(TroopClass.STORMTROOPER, TroopClass.SCOUTTROOPER, 5));
+        upgrades.add(new TroopUpgrade(TroopClass.Imperial_Trooper, TroopClass.Storm_Trooper, 3));
+        upgrades.add(new TroopUpgrade(TroopClass.Storm_Trooper, TroopClass.Scout_Trooper, 5));
+        upgrades.add(new TroopUpgrade(TroopClass.Storm_Trooper,TroopClass.Purge_Trooper,5));
     }
 
-    public static TroopClass getNextTroopClass(TroopClass current, int level) {
+    public static List<TroopClass> getAvailablePromotions(TroopClass current, int level) {
+        List<TroopClass> options = new ArrayList<>();
         for (TroopUpgrade u : upgrades) {
-            if (u.current == current && level >= u.requiredLevel) {
-                return u.next;
+            if (u.current == current && level >= u.requiredLevel && u.next != current) {
+                options.add(u.next);
             }
         }
-        return null; // No promotion available
+        return options;
     }
 }

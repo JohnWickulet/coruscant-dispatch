@@ -20,6 +20,7 @@ public abstract class Soldier {
     public double rest_time_remaining;
     public ImageIcon portrait;
     public TroopClass troopClass;
+    private int databaseId;
 
     public Soldier(
             String name,
@@ -50,7 +51,7 @@ public abstract class Soldier {
     }
 
     public int getExpToLevel() {
-        return 10 + level * 5;
+        return 25 + level * 25;
     }
 
     public void increaseStat(String stat) {
@@ -94,9 +95,7 @@ public abstract class Soldier {
             }
         }
     }
-    public boolean isDead() {
-        return health <= 0;
-    }
+
     public void revive() {
         health = 1;
         state = State.AVAILABLE;
@@ -106,7 +105,6 @@ public abstract class Soldier {
         state = State.AVAILABLE;
         rest_time_remaining = 0;
     }
-
     public void heal() {
         if(health==1) health++;
     }
@@ -127,10 +125,7 @@ public abstract class Soldier {
         this.stealth=base.stealth;
     }
 
-    public abstract boolean canPromote(TroopClass target);
     public abstract Soldier promoteTo(TroopClass target);
-
-    private int databaseId;
 
     public void setDatabaseId(int id) {
         this.databaseId = id;

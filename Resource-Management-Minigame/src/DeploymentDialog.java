@@ -36,7 +36,7 @@ public class DeploymentDialog extends JDialog {
         add(buildMainPanel(), BorderLayout.CENTER);
         add(buildBottom(), BorderLayout.SOUTH);
 
-        setVisible(true);
+        this.revalidate();
     }
 
     /* ================= MAIN PANEL ================= */
@@ -76,7 +76,6 @@ public class DeploymentDialog extends JDialog {
         troopCardsPanel.setPreferredSize(new Dimension(width, cardHeight + 20));
 
         for (Soldier s : squad.soldiers) {
-            if (s.health <= 0) continue;
 
             SoldierCard card = new SoldierCard(s);
             card.setPreferredSize(new Dimension(cardWidth, cardHeight));
@@ -152,9 +151,9 @@ public class DeploymentDialog extends JDialog {
     private void updateStatClues() {
         statCluesPanel.removeAll();
         statCluesPanel.add(new JLabel("<html><b>Mission Requirements</b></html>"));
-        statCluesPanel.add(new JLabel("Strength"));
-        statCluesPanel.add(new JLabel("Intelligence"));
-        statCluesPanel.add(new JLabel("Stealth"));
+        for(String s:event.statPref) {
+            statCluesPanel.add(new JLabel(s));
+        }
         statCluesPanel.revalidate();
         statCluesPanel.repaint();
     }

@@ -4,20 +4,19 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class GameLauncher extends JFrame {
-    // Ensure this matches your class name (SaveManager or saveGame)
     private final saveGame saveManager = new saveGame();
     private JList<String> saveList;
     private DefaultListModel<String> listModel;
 
     public GameLauncher() {
-        setTitle("Empire Command - Main Menu");
+        setTitle("Totally not Dispatch - A Star Wars Game");
         setSize(500, 450);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout(15, 15));
 
         // Header
-        JLabel title = new JLabel("EMPIRE COMMAND", SwingConstants.CENTER);
+        JLabel title = new JLabel("Coruscant Dispatch", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 32));
         title.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
         add(title, BorderLayout.NORTH);
@@ -73,8 +72,7 @@ public class GameLauncher extends JFrame {
             }
             try {
                 Game loadedGame = saveManager.fullLoad(selected);
-                GameUI ui = new GameUI(loadedGame,selected);
-                ui.getMap().syncWithGame();
+                startGame(loadedGame,selected);
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(this, "Failed to load save: " + ex.getMessage());
                 ex.printStackTrace();
@@ -92,7 +90,7 @@ public class GameLauncher extends JFrame {
 
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
-                    saveManager.deleteProfile(selected); // You need to add this to SaveManager
+                    saveManager.deleteProfile(selected);
                     refreshSaveList();
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(this, "Error deleting save: " + ex.getMessage());
@@ -110,18 +108,14 @@ public class GameLauncher extends JFrame {
     }
 
     private void startGame(Game game, String profileName) {
-        // Launches the main game UI and kills the launcher
-        SwingUtilities.invokeLater(() -> new GameUI(game, profileName));
-        this.dispose();
+        SwingUtilities.invokeLater(() -> new GameUI(game, profileName).setVisible(true));
+        GameLauncher.this.dispose();
     }
 
     public static void main(String[] args) {
-        // This is now the entry point for your entire application
         try {
-            // Optional: Makes it look like a native Windows/Mac app
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
-
         SwingUtilities.invokeLater(() -> new GameLauncher().setVisible(true));
     }
 }

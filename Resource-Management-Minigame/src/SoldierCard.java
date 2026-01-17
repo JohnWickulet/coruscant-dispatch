@@ -52,15 +52,19 @@ public class SoldierCard extends JPanel {
         /* ===== BASE STATE COLOR ===== */
         switch (soldier.state) {
             case DEPLOYED -> {
-                g2.setColor(new Color(84, 91, 96));
+                g2.setColor(new Color(163, 157, 157));
                 g2.fillRect(0, 0, w, h);
             }
             case RESTING -> {
-                g2.setColor(new Color(80, 140, 246));
+                g2.setColor(new Color(73, 145, 193));
                 g2.fillRect(0, 0, w, h);
             }
             case AVAILABLE -> {
                 g2.setColor(Color.WHITE);
+                g2.fillRect(0, 0, w, h);
+            }
+            case DOWNED -> {
+                g2.setColor(new Color(84, 91, 96, 255));
                 g2.fillRect(0, 0, w, h);
             }
         }
@@ -93,6 +97,7 @@ public class SoldierCard extends JPanel {
         String stateText = switch (soldier.state) {
             case DEPLOYED -> "Deployed";
             case RESTING -> "Resting";
+            case DOWNED -> "Downed";
             default -> "";
         };
 

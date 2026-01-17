@@ -4,6 +4,7 @@ public class StormTrooper extends ImperialTrooper {
 
     public StormTrooper(String name) {
         super(name);
+        this.troopClass=TroopClass.Storm_Trooper;
         this.strength += 1;
         this.mobility += 1;
         this.intelligence += 1;
@@ -14,7 +15,8 @@ public class StormTrooper extends ImperialTrooper {
     public StormTrooper(Soldier base){
         super(base);
         this.setDatabaseId(base.getDatabaseId());
-        this.troopClass=TroopClass.STORMTROOPER;
+        this.state=base.state;
+        this.troopClass=TroopClass.Scout_Trooper;
         this.strength += 1;
         this.mobility += 1;
         this.intelligence += 1;
@@ -24,11 +26,11 @@ public class StormTrooper extends ImperialTrooper {
         this.portrait = new ImageIcon(getClass().getResource("/portraits/stormtrooper.png"));
     }
     @Override
-    public boolean canPromote(TroopClass target) {
-        return UpgradeRegistry.getNextTroopClass(troopClass, level) == target;
-    }
-    @Override
-    public Soldier promoteTo(TroopClass target){
-        return new ScoutTrooper(this);
+    public Soldier promoteTo(TroopClass target) {
+        return switch (target) {
+            case Scout_Trooper -> new ScoutTrooper(this);
+            case Purge_Trooper -> new PurgeTrooper(this);
+            default -> this;
+        };
     }
 }
