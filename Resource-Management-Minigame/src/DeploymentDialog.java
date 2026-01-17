@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class DeploymentDialog extends JDialog {
 
@@ -127,6 +128,7 @@ public class DeploymentDialog extends JDialog {
             );
             return;
         }
+        Random rng= new Random();
         if (!selectedTroops.contains(s)) {
             if (selectedTroops.size() >= maxSelectable) {
                 JOptionPane.showMessageDialog(
@@ -137,9 +139,13 @@ public class DeploymentDialog extends JDialog {
             }
             selectedTroops.add(s);
             card.toggle();
+            String[] sounds={"troop_select1.wav","troop_select2.wav","troop_select3.wav"};
+            SoundManager.playSound(sounds[rng.nextInt(sounds.length)]);
         } else {
             selectedTroops.remove(s);
             card.toggle();
+            String[] sounds={"troop_select1.wav","troop_select2.wav","troop_select3.wav"};
+            SoundManager.playSound(sounds[rng.nextInt(sounds.length)]);
         }
 
         pentagonPanel.updateStats(selectedTroops);

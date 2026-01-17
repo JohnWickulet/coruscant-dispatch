@@ -1,12 +1,17 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.AWTEventListener;
+import java.awt.event.MouseEvent;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Random;
 
 public class GameLauncher extends JFrame {
     private final saveGame saveManager = new saveGame();
     private JList<String> saveList;
     private DefaultListModel<String> listModel;
+    private static String[] sfx = {"select1.wav","select2.wav","select3.wav","select4.wav","select5.wav"};
+    private static final Random rng = new Random();
 
     public GameLauncher() {
         setTitle("Totally not Dispatch - A Star Wars Game");
@@ -54,8 +59,9 @@ public class GameLauncher extends JFrame {
 
         // 1. Start New Game
         btnNew.addActionListener(e -> {
-            String name = JOptionPane.showInputDialog(this, "Enter Commander Name:");
+            String name = JOptionPane.showInputDialog(this, "Enter Save File Name:");
             if (name != null && !name.trim().isEmpty()) {
+                SoundManager.playSound(sfx[rng.nextInt(sfx.length)]);
                 Game game = new Game();
                 // initialize() adds the default soldiers
                 game.initialize();
@@ -90,6 +96,7 @@ public class GameLauncher extends JFrame {
 
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
+                    SoundManager.playSound(sfx[rng.nextInt(sfx.length)]);
                     saveManager.deleteProfile(selected);
                     refreshSaveList();
                 } catch (SQLException ex) {
@@ -97,6 +104,18 @@ public class GameLauncher extends JFrame {
                 }
             }
         });
+
+    }
+
+    public void initGlobalClickSound() {
+        Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
+            @Override
+            public void eventDispatched(AWTEvent event) {
+                if (event.getID() == MouseEvent.MOUSE_PRESSED) {
+                    SoundManager.playSound(sfx[rng.nextInt(sfx.length)]);
+                }
+            }
+        }, AWTEvent.MOUSE_EVENT_MASK);
     }
 
     private void refreshSaveList() {
@@ -116,6 +135,14 @@ public class GameLauncher extends JFrame {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
+        Toolkit.getDefaultToolkit().addAWTEventListener(event -> {
+            if (event instanceof MouseEvent) {
+                MouseEvent me = (MouseEvent) event;
+                if (me.getID() == MouseEvent.MOUSE_PRESSED) {
+                    SoundManager.playSound(sfx[rng.nextInt(sfx.length)]);
+                }
+            }
+        }, AWTEvent.MOUSE_EVENT_MASK);
         SwingUtilities.invokeLater(() -> new GameLauncher().setVisible(true));
     }
 }

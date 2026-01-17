@@ -143,30 +143,7 @@ public class GameUI extends JFrame {
         gameMenu.add(mainMenuItem);
         gameMenu.addSeparator();
         gameMenu.add(exitItem);
-
-        // --- MUSIC MENU ---
-        JMenu musicMenu = new JMenu("Music");
-
-        JPanel sliderPanel = new JPanel(new BorderLayout());
-        sliderPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-
-        JLabel volLabel = new JLabel("Volume: 50%");
-        volLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
-
-        JSlider volumeSlider = new JSlider(0, 100, 50);
-        volumeSlider.setPreferredSize(new Dimension(150, 30));
-        volumeSlider.addChangeListener(e -> {
-            int val = volumeSlider.getValue();
-            volLabel.setText("Volume: " + val + "%");
-            // AudioManager.setVolume(val / 100.0f);
-        });
-
-        sliderPanel.add(volLabel, BorderLayout.NORTH);
-        sliderPanel.add(volumeSlider, BorderLayout.CENTER);
-        musicMenu.add(sliderPanel);
-
         menuBar.add(gameMenu);
-        menuBar.add(musicMenu);
         setJMenuBar(menuBar);
     }
 }

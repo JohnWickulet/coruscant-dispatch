@@ -29,6 +29,8 @@ public class EventManager {
 
             EventCard card = new EventCard(newEvent);
             map.addEvent(card);
+            String[] sounds={"event_popup1.wav","event_popup2.wav"};
+            SoundManager.playSound(sounds[rng.nextInt(sounds.length)]);
         }
     }
     private Event generateProgressiveEvent(Location loc,int x,int y) {

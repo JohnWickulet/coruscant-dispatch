@@ -34,7 +34,6 @@ public class SoldierSelectDialog extends JDialog {
                     for (SoldierCard c : cards)
                         if (c != card && c.isSelected())
                             c.toggle();
-
                     card.toggle();
                 }
             });
