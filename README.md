@@ -3,6 +3,7 @@
 + The project itself is a video game in which you must send troopers to take care of various events on the map.
 + The game features an inventory system, a shop system, an upgrade system and a promotion mechanic.
 + The main goal is to manage to survive for as long as possible as losing too many events will lead to a game over.
++ Any details missing from this readme are a victim of my toasted brain after too many hours of working on this project.
 
 # Diagram
 This diagram is supposed to show most of the relations inbetween the classes. (Some were not included due to lack of space)
