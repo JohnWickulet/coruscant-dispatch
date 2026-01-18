@@ -210,8 +210,35 @@ This diagram is supposed to show most of the relations inbetween the classes. (S
     private void removeEvent: removes the event visually
     
 ### BottomPanel
-    public BottomPanel
+    public BottomPanel: small ui consisting of 3 buttons (inventory,shop,upgrades)
+    
+### InventoryWindow
+#### Variables
+    private final Inventory inventory;
+    private final Squad squad;
+    private final GameUI ui;
+    private final Map<ItemType, JButton> itemButtons = new EnumMap<>(ItemType.class);
+#### Methods
+    public InventoryWindow: generates the window for the inventory, featuring the 3 item types on top, the troops in the middle and the close button on the bottom
+    private void tryApplyItem: will try to use a selected item on a selected troop, will make an error sound if unable to use the item on the troop
 
+### ShopWindow
+#### Methods
+    public ShopWindow: generate the window for the shop, featuring the ability to buy items
+    private JPanel createItemCard: generates the cards for the 3 item types
+
+### UpgradeWindow
+#### Variables
+    private GameUI gameUi;
+    private final Squad squad;
+    private Soldier activeSoldier;
+    private JPanel centerPanel;
+    private JPanel selectorPanel;
+#### Methods
+    public UpgradeWindow: 
+        generates the window for the troop upgrades, with the troop, their image and (optionally) the promotion button on the left,
+        the upgrade panel in the middle, the stat pentagon on the right and the troops on the bottom
+    
 
 
 
