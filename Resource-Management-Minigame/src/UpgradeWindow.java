@@ -74,7 +74,7 @@ public class UpgradeWindow extends GameWindow implements UpgradeListener {
         promoPanel.setMaximumSize(new Dimension(250, 120));
         promoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        List<TroopClass> possiblePromotions = UpgradeRegistry.getAvailablePromotions(activeSoldier.troopClass, activeSoldier.level);
+        List<TroopClass> possiblePromotions = UpgradeRegistry.getAvailablePromotions(activeSoldier);
 
         if (!possiblePromotions.isEmpty() && (activeSoldier.state== Soldier.State.AVAILABLE || activeSoldier.state== Soldier.State.RESTING)){
             JLabel promoTitle = new JLabel("AVAILABLE PROMOTIONS");
@@ -106,7 +106,7 @@ public class UpgradeWindow extends GameWindow implements UpgradeListener {
                 promoPanel.add(Box.createVerticalStrut(5));
             }
         } else {
-            JLabel status = new JLabel(activeSoldier.isAvailable() ? "NO PROMOTION AVAILABLE" : "UNIT ON MISSION");
+            JLabel status = new JLabel((activeSoldier.state == Soldier.State.AVAILABLE) || (activeSoldier.state == Soldier.State.RESTING) ? "NO PROMOTION AVAILABLE" : "UNIT ON MISSION");
             status.setForeground(Color.GRAY);
             status.setAlignmentX(Component.CENTER_ALIGNMENT);
             promoPanel.add(Box.createVerticalGlue());

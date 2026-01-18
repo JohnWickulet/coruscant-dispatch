@@ -2,14 +2,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Random;
 
 public class GameLauncher extends JFrame {
     private final saveGame saveManager = new saveGame();
     private JList<String> saveList;
     private DefaultListModel<String> listModel;
-    private static String[] sfx = {"select1.wav","select2.wav","select3.wav","select4.wav","select5.wav"};
-    private static final Random rng = new Random();
 
     public GameLauncher() {
         setTitle("Totally not Dispatch - A Star Wars Game");
@@ -98,7 +95,6 @@ public class GameLauncher extends JFrame {
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     SoundManager.select();
-                    SoundManager.playSound(sfx[rng.nextInt(sfx.length)]);
                     saveManager.deleteProfile(selected);
                     refreshSaveList();
                 } catch (SQLException ex) {

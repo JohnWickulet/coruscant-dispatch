@@ -4,10 +4,9 @@ import java.util.List;
 import java.util.Random;
 
 public class Game {
-    public Squad squad = new Squad(10);
+    public Squad squad = new Squad(8);
     public Inventory inventory = new Inventory();
     public Shop shop = new Shop();
-
     private int currency = 100;
     private int patience = 50;
     private int success_count = 0;

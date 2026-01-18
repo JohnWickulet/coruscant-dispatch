@@ -11,10 +11,10 @@ public class UpgradeRegistry {
         upgrades.add(new TroopUpgrade(TroopClass.Storm_Trooper,TroopClass.Purge_Trooper,5));
     }
 
-    public static List<TroopClass> getAvailablePromotions(TroopClass current, int level) {
+    public static List<TroopClass> getAvailablePromotions(Soldier soldier) {
         List<TroopClass> options = new ArrayList<>();
         for (TroopUpgrade u : upgrades) {
-            if (u.current == current && level >= u.requiredLevel && u.next != current) {
+            if (u.current == soldier.troopClass && soldier.level >= u.requiredLevel && u.next != soldier.troopClass) {
                 options.add(u.next);
             }
         }

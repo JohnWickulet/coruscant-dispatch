@@ -136,15 +136,7 @@ public class InventoryWindow extends GameWindow {
     private void tryApplyItem(Soldier s) {
         if (selectedItem == null) return;
 
-        boolean success = false;
-
-        // Check conditions based on item type
-        switch (selectedItem) {
-            case MEDKIT -> success = s.heal();
-            case INSTANT_AVAILABLE -> success = s.makeAvailableInstantly();
-            case REVIVE -> success = s.revive();
-        }
-
+        boolean success = selectedItem.use(s);
         if (success) {
             inventory.consume(selectedItem);
             SoundManager.heal();

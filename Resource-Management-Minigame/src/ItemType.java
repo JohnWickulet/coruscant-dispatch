@@ -13,12 +13,12 @@ public enum ItemType {
         this.description=description;
     }
 
-    public void use(Soldier soldier) {
-        switch (this) {
+    public boolean use(Soldier soldier) {
+        return switch (this) {
             case MEDKIT -> soldier.heal();
             case INSTANT_AVAILABLE -> soldier.makeAvailableInstantly();
             case REVIVE -> soldier.revive();
-        }
+        };
     }
     public String displayName(){
         return name;

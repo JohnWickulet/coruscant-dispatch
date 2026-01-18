@@ -151,17 +151,4 @@ public class GalaxyMapPanel extends JPanel {
         revalidate();
         repaint();
     }
-
-    public void syncWithGame() {
-        this.removeAll();
-        this.eventCards.clear();
-        for (Event evt : game.getActiveEvents()) {
-            EventCard card = new EventCard(evt);
-            card.setSize(card.getPreferredSize());
-            addEvent(card);
-        }
-        updateComponentPositions();
-        revalidate();
-        repaint();
-    }
 }
