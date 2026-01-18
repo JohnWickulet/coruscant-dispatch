@@ -16,7 +16,7 @@ public class StormTrooper extends ImperialTrooper {
         super(base);
         this.setDatabaseId(base.getDatabaseId());
         this.state=base.state;
-        this.troopClass=TroopClass.Scout_Trooper;
+        this.troopClass=TroopClass.Storm_Trooper;
         this.strength += 1;
         this.mobility += 1;
         this.intelligence += 1;

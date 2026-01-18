@@ -2,7 +2,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class DeploymentDialog extends JDialog {
 
@@ -10,17 +9,14 @@ public class DeploymentDialog extends JDialog {
     private final Squad squad;
     private final Event event;
 
-    private final CombinedStatPentagonPanel pentagonPanel =
-            new CombinedStatPentagonPanel();
-
+    private final CombinedStatPentagonPanel pentagonPanel = new CombinedStatPentagonPanel();
     private final JPanel statCluesPanel = new JPanel();
     private final JPanel troopCardsPanel = new JPanel();
-
     private final List<Soldier> selectedTroops = new ArrayList<>();
 
     private final int maxSelectable;
-    private final int cardWidth = 60;
-    private final int cardHeight = 80;
+    private final int cardWidth = 120;
+    private final int cardHeight = 150;
     private final int gap = 10;
 
     public DeploymentDialog(GameUI ui, Squad squad, Event event) {
@@ -36,144 +32,120 @@ public class DeploymentDialog extends JDialog {
 
         add(buildMainPanel(), BorderLayout.CENTER);
         add(buildBottom(), BorderLayout.SOUTH);
-
-        this.revalidate();
     }
 
-    /* ================= MAIN PANEL ================= */
-
     private JPanel buildMainPanel() {
-        JPanel main = new JPanel(new BorderLayout(10, 10));
+        JPanel main = new JPanel(new BorderLayout(15, 15));
+        main.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel topRow = new JPanel(new GridLayout(1, 3, 10, 0));
+        // TOP SECTION: Intel and Pentagon
+        JPanel briefingPanel = buildBriefingPanel();
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(pentagonPanel, BorderLayout.CENTER);
+        centerPanel.setBorder(BorderFactory.createTitledBorder("Performance Projection"));
 
-        // LEFT: EVENT INFO
-        JPanel left = new JPanel();
-        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
-        JLabel name = new JLabel(event.name);
-        name.setFont(name.getFont().deriveFont(Font.BOLD, 18f));
-        JLabel desc = new JLabel("<html><i>" + event.description + "</i></html>");
-        left.add(name);
-        left.add(Box.createVerticalStrut(10));
-        left.add(desc);
-
-        // MIDDLE: STATS
-        JPanel middle = new JPanel(new BorderLayout());
-        middle.add(pentagonPanel, BorderLayout.CENTER);
-
-        // RIGHT: CLUES
-        statCluesPanel.setLayout(new BoxLayout(statCluesPanel, BoxLayout.Y_AXIS));
-        updateStatClues();
-
-        topRow.add(left);
-        topRow.add(middle);
-        topRow.add(statCluesPanel);
-
+        JPanel topRow = new JPanel(new BorderLayout(10, 0));
+        topRow.add(briefingPanel, BorderLayout.WEST);
+        topRow.add(centerPanel, BorderLayout.CENTER);
         main.add(topRow, BorderLayout.CENTER);
 
-        // BOTTOM: TROOP CARDS
-        troopCardsPanel.setLayout(new FlowLayout(FlowLayout.CENTER, gap, 10));
-        int width = maxSelectable * (cardWidth + gap) - gap;
-        troopCardsPanel.setPreferredSize(new Dimension(width, cardHeight + 20));
+        // BOTTOM SECTION: Centered Troop Cards
+        // FlowLayout.CENTER ensures they stay together in the middle
+        troopCardsPanel.setLayout(new FlowLayout(FlowLayout.CENTER, gap, 5));
+        troopCardsPanel.setOpaque(false);
 
         for (Soldier s : squad.soldiers) {
-
-            SoldierCard card = new SoldierCard(s);
-            card.setPreferredSize(new Dimension(cardWidth, cardHeight));
-
+            SoldierCard card = new SoldierCard(s, 120, 150);
             card.addMouseListener(new java.awt.event.MouseAdapter() {
                 public void mouseClicked(java.awt.event.MouseEvent e) {
                     toggleTroopSelection(card);
                 }
             });
-
             troopCardsPanel.add(card);
         }
 
+        int preferredWidth = (cardWidth + gap) * squad.soldiers.size() + gap;
+        troopCardsPanel.setPreferredSize(new Dimension(preferredWidth, cardHeight + 10));
+
         JScrollPane scroll = new JScrollPane(troopCardsPanel);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setPreferredSize(new Dimension(width, cardHeight + 40));
+        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        // Height allows for card + scrollbar space
+        scroll.setPreferredSize(new Dimension(850, cardHeight + 35));
+        scroll.setBorder(BorderFactory.createTitledBorder("Select Personnel"));
 
         main.add(scroll, BorderLayout.SOUTH);
-
         return main;
     }
 
-    /* ================= BUTTONS ================= */
+    private JPanel buildBriefingPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setPreferredSize(new Dimension(280, 300));
+        panel.setBorder(BorderFactory.createTitledBorder("Mission Intel"));
+
+        JLabel nameLabel = new JLabel(event.name);
+        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        JLabel desc = new JLabel("<html><body style='width: 200px;'>" + event.description + "</body></html>");
+        JLabel maxLabel = new JLabel("Deployment Limit: " + maxSelectable);
+
+        statCluesPanel.setLayout(new BoxLayout(statCluesPanel, BoxLayout.Y_AXIS));
+        updateStatClues();
+
+        panel.add(nameLabel);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(desc);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(new JSeparator());
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(maxLabel);
+        panel.add(statCluesPanel);
+
+        return panel;
+    }
 
     private JPanel buildBottom() {
-        JPanel bottom = new JPanel(new FlowLayout());
-
-        JButton deploy = new JButton("Deploy");
-        JButton cancel = new JButton("Cancel");
-
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton deploy = new JButton("DEPLOY");
+        JButton cancel = new JButton("CANCEL");
         deploy.addActionListener(e -> deploy());
         cancel.addActionListener(e -> dispose());
-
         bottom.add(deploy);
         bottom.add(cancel);
         return bottom;
     }
 
-    /* ================= SELECTION ================= */
-
     private void toggleTroopSelection(SoldierCard card) {
         Soldier s = card.getSoldier();
-        if (!s.isAvailable()) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    s.name + " is busy or resting and cannot be sent.",
-                    "Soldier Unavailable",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-        Random rng= new Random();
+        if (!s.isAvailable()) { SoundManager.error(); return; }
+
         if (!selectedTroops.contains(s)) {
-            if (selectedTroops.size() >= maxSelectable) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "You can deploy at most " + maxSelectable + " troops."
-                );
-                return;
-            }
+            if (selectedTroops.size() >= maxSelectable) { SoundManager.error(); return; }
             selectedTroops.add(s);
             card.toggle();
-            String[] sounds={"troop_select1.wav","troop_select2.wav","troop_select3.wav"};
-            SoundManager.playSound(sounds[rng.nextInt(sounds.length)]);
+            SoundManager.selectTroop();
         } else {
             selectedTroops.remove(s);
             card.toggle();
-            String[] sounds={"troop_select1.wav","troop_select2.wav","troop_select3.wav"};
-            SoundManager.playSound(sounds[rng.nextInt(sounds.length)]);
+            SoundManager.selectTroop();
         }
-
         pentagonPanel.updateStats(selectedTroops);
         updateStatClues();
     }
 
-    /* ================= CLUES ================= */
-
     private void updateStatClues() {
         statCluesPanel.removeAll();
-        statCluesPanel.add(new JLabel("<html><b>Mission Requirements</b></html>"));
-        for(String s:event.statPref) {
-            statCluesPanel.add(new JLabel(s));
+        for (String s : event.statPref) {
+            statCluesPanel.add(new JLabel("• " + s));
         }
         statCluesPanel.revalidate();
         statCluesPanel.repaint();
     }
 
-    /* ================= DEPLOY ================= */
-
     private void deploy() {
-        if (selectedTroops.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Select at least one soldier.");
-            return;
-        }
-        for (Soldier s : selectedTroops) {
-            s.startMission();
-        }
+        if (selectedTroops.isEmpty()) return;
+        for (Soldier s : selectedTroops) s.startMission();
         event.deploy(selectedTroops);
         dispose();
     }

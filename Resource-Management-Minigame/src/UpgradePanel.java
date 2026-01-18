@@ -47,33 +47,23 @@ public class UpgradePanel extends JPanel {
         JButton plusBtn = new JButton("+");
 
         // Initialize button states
-        minusBtn.setEnabled(false); // Only allow decrease if you implement it
+        minusBtn.setEnabled(false);
         plusBtn.setEnabled(soldier.exp >= soldier.getExpToLevel());
 
         // Increase stat
         plusBtn.addActionListener(e -> {
             if (soldier.exp < soldier.getExpToLevel()) return;
-
+            SoundManager.upgradeSmall();
             soldier.exp -= soldier.getExpToLevel();
             soldier.increaseStat(statName);
             valueLabel.setText(String.valueOf(getter.get()));
             plusBtn.setEnabled(soldier.exp >= soldier.getExpToLevel());
             listener.onUpgrade();
         });
-
-        // Decrease stat (optional)
-        minusBtn.addActionListener(e -> {
-            // Optional: Implement stat decrease logic if allowed
-            // For example: soldier.decreaseStat(statName);
-            // valueLabel.setText(String.valueOf(getter.get()));
-            // listener.onUpgrade();
-        });
-
         row.add(nameLabel);
         row.add(valueLabel);
         row.add(minusBtn);
         row.add(plusBtn);
-
         parent.add(row);
     }
 

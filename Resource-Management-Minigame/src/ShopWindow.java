@@ -6,16 +6,16 @@ import java.awt.*;
 public class ShopWindow extends GameWindow {
 
     public ShopWindow(GameUI ui, Shop shop, Game game) {
-        super(ui, "Shop", 900, 500);
+        super(ui, "Shop Menu", 900, 500);
         setLayout(new BorderLayout(10, 10));
 
-        // ================= HEADER =================
+        // HEADER
         JLabel moneyLabel = new JLabel("Credits: " + game.getCurrency());
         moneyLabel.setFont(moneyLabel.getFont().deriveFont(Font.BOLD, 16f));
         moneyLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
         add(moneyLabel, BorderLayout.NORTH);
 
-        // ================= ITEM GRID =================
+        // ITEMS
         JPanel grid = new JPanel(new GridLayout(0, 3, 15, 15));
         grid.setBorder(new EmptyBorder(15, 15, 15, 15));
 
@@ -27,9 +27,12 @@ public class ShopWindow extends GameWindow {
         scroll.setBorder(null);
         add(scroll, BorderLayout.CENTER);
 
-        // ================= FOOTER =================
+        // FOOTER
         JButton close = new JButton("Close");
-        close.addActionListener(e -> dispose());
+        close.addActionListener(e -> {
+            SoundManager.select();
+            dispose();
+        });
 
         JPanel bottom = new JPanel();
         bottom.add(close);
@@ -37,9 +40,7 @@ public class ShopWindow extends GameWindow {
         setVisible(true);
     }
 
-    // =========================================================
-    // ITEM CARD
-    // =========================================================
+    // ITEM CARDS
     private JPanel createItemCard(
             ItemType item,
             Shop shop,
@@ -51,7 +52,7 @@ public class ShopWindow extends GameWindow {
         card.setBackground(new Color(25, 25, 40));
         card.setPreferredSize(new Dimension(240, 320));
 
-        // ---------- PORTRAIT ----------
+        // ITEM PORTRAIT
         JPanel portrait = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -66,7 +67,7 @@ public class ShopWindow extends GameWindow {
         portrait.setPreferredSize(new Dimension(200, 120));
         card.add(portrait, BorderLayout.NORTH);
 
-        // ---------- DESCRIPTION ----------
+        // ITEM DESCRIPTION
         JTextArea desc = new JTextArea(item.description);
         desc.setWrapStyleWord(true);
         desc.setLineWrap(true);
@@ -82,7 +83,7 @@ public class ShopWindow extends GameWindow {
 
         card.add(descScroll, BorderLayout.CENTER);
 
-        // ---------- BUY AREA ----------
+        // BUY ZONE
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
 
@@ -92,14 +93,10 @@ public class ShopWindow extends GameWindow {
         JButton buy = new JButton("Buy");
         buy.addActionListener(e -> {
             if (shop.buy(item, game)) {
+                SoundManager.select();
                 moneyLabel.setText("Credits: " + game.getCurrency());
             } else {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Not enough credits!",
-                        "Purchase Failed",
-                        JOptionPane.WARNING_MESSAGE
-                );
+                SoundManager.error();
             }
         });
 

@@ -6,7 +6,6 @@ public class UpgradeRegistry {
     private static final List<TroopUpgrade> upgrades = new ArrayList<>();
 
     static {
-        // Define your promotions
         upgrades.add(new TroopUpgrade(TroopClass.Imperial_Trooper, TroopClass.Storm_Trooper, 3));
         upgrades.add(new TroopUpgrade(TroopClass.Storm_Trooper, TroopClass.Scout_Trooper, 5));
         upgrades.add(new TroopUpgrade(TroopClass.Storm_Trooper,TroopClass.Purge_Trooper,5));

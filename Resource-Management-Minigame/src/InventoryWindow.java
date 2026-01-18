@@ -1,148 +1,174 @@
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.HashMap;
 
-public class InventoryWindow extends JDialog { // Changed to JDialog for modal behavior
+public class InventoryWindow extends GameWindow {
 
     private final Inventory inventory;
     private final Squad squad;
     private final GameUI ui;
     private final Map<ItemType, JButton> itemButtons = new EnumMap<>(ItemType.class);
-    private final Map<Soldier, JPanel> soldierCards = new HashMap<>();
-
     private ItemType selectedItem = null;
-    private final JLabel infoLabel = new JLabel("Select an item to use", SwingConstants.CENTER);
+    private final JLabel infoLabel = new JLabel("SELECT AN ITEM", SwingConstants.CENTER);
+    private final Color BG_WHITE = new Color(240, 240, 240);
+    private final Color CARD_WHITE = Color.WHITE;
+    private final Color GLOW_HEAL = new Color(0, 180, 70); // Strong green
+    private final Color GLOW_SELECT = new Color(0, 120, 215); // Strong blue
 
     public InventoryWindow(GameUI ui, Inventory inventory, Squad squad) {
-        super(ui, "Armory & Inventory", true); // Modal prevents background clicking
+        super(ui, "Inventory Menu", 750, 650);
         this.ui = ui;
         this.inventory = inventory;
         this.squad = squad;
 
-        setSize(700, 600);
-        setLocationRelativeTo(ui);
+        getContentPane().setBackground(BG_WHITE);
         setLayout(new BorderLayout(15, 15));
-        ((JPanel)getContentPane()).setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        ((JPanel)getContentPane()).setOpaque(false);
+        ((JPanel)getContentPane()).setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         add(buildItemsPanel(), BorderLayout.NORTH);
-        add(new JScrollPane(buildSoldiersPanel()), BorderLayout.CENTER);
+
+        JPanel soldierGrid = buildSoldiersPanel();
+        soldierGrid.setOpaque(false);
+        JScrollPane scroll = new JScrollPane(soldierGrid);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setBorder(null);
+        add(scroll, BorderLayout.CENTER);
+
         add(buildBottom(), BorderLayout.SOUTH);
-
-        // UI looks better with a dark theme or specific colors
-        infoLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-
         setVisible(true);
     }
 
-    /* ================= ITEMS ================= */
-
     private JPanel buildItemsPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, ItemType.values().length, 10, 0));
-        panel.setBorder(BorderFactory.createTitledBorder("Available Supplies"));
+        JPanel panel = new JPanel(new GridLayout(1, ItemType.values().length, 12, 0));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                new LineBorder(Color.LIGHT_GRAY), "RESOURCES", 0, 0, null, Color.DARK_GRAY));
 
         for (ItemType type : ItemType.values()) {
-            JButton btn = new JButton();
-            updateItemButton(btn, type);
-
-            btn.addActionListener(e -> {
-                selectedItem = type;
-                highlightSelectedItem(type);
-                infoLabel.setText("Using " + type.displayName() + ": Select a soldier to apply.");
-            });
-
+            JButton btn = createGlowButton(type);
             itemButtons.put(type, btn);
             panel.add(btn);
         }
         return panel;
     }
 
+    private JButton createGlowButton(ItemType type) {
+        JButton btn = new JButton();
+        btn.setBackground(CARD_WHITE);
+        btn.setFocusPainted(false);
+        updateItemButton(btn, type);
+
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if(btn.isEnabled()) btn.setBorder(BorderFactory.createLineBorder(GLOW_SELECT, 2));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if(selectedItem != type) btn.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+            }
+        });
+
+        btn.addActionListener(e -> {
+            selectedItem = type;
+            highlightSelectedItem(type);
+            infoLabel.setText("READY TO USE: " + type.displayName());
+            SoundManager.select();
+        });
+        return btn;
+    }
+
     private void updateItemButton(JButton btn, ItemType type) {
         int qty = inventory.get(type);
         btn.setEnabled(qty > 0);
-        btn.setText("<html><center><b>" + type.displayName() + "</b><br><font color='blue'>Qty: " + qty + "</font></center></html>");
+        btn.setText("<html><center><b>" + type.displayName() + "</b><br>" +
+                "<font color='#0078D7'>Qty: " + qty + "</font></center></html>");
+        btn.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
     }
 
     private void highlightSelectedItem(ItemType selected) {
         itemButtons.forEach((type, btn) -> {
-            if (type == selected) {
-                btn.setBackground(new Color(180, 200, 255));
-            } else {
-                btn.setBackground(null);
-            }
+            btn.setBorder(BorderFactory.createLineBorder(type == selected ? GLOW_SELECT : Color.LIGHT_GRAY, 2));
+            btn.setBackground(type == selected ? new Color(240, 250, 255) : CARD_WHITE);
         });
     }
 
-    /* ================= SOLDIERS ================= */
-
     private JPanel buildSoldiersPanel() {
-        // Grid layout makes it look like a collection of dossiers
-        JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
-
+        JPanel panel = new JPanel(new GridLayout(2, 4, 10, 10));
+        panel.setOpaque(false);
+        int count = 0;
         for (Soldier s : squad.soldiers) {
-            JPanel card = createSoldierMiniCard(s);
-            soldierCards.put(s, card);
-            panel.add(card);
+            if (count >= 8) break;
+            panel.add(createSoldierCard(s));
+            count++;
+        }
+        for (int i = count; i < 8; i++) {
+            panel.add(new JPanel() {{ setOpaque(false); }});
         }
         return panel;
     }
 
-    private JPanel createSoldierMiniCard(Soldier s) {
-        JPanel card = new JPanel(new BorderLayout(5, 5));
-        card.setBorder(BorderFactory.createEtchedBorder());
-
-        JButton nameBtn = new JButton(s.name + " (" + s.troopClass + ")");
-
-        // Show current stats so player knows who needs healing
-        JLabel stats = new JLabel(String.format("HP: %d/%d | STR: %d | INT: %d",
-                s.health, s.maxHealth, s.strength, s.intelligence));
-        stats.setHorizontalAlignment(SwingConstants.CENTER);
-        stats.setFont(new Font("Monospaced", Font.PLAIN, 11));
-
-        nameBtn.addActionListener(e -> tryApplyItem(s, stats));
-
-        card.add(nameBtn, BorderLayout.CENTER);
-        card.add(stats, BorderLayout.SOUTH);
-
+    private JPanel createSoldierCard(Soldier s) {
+        SoldierCard card = new SoldierCard(s, 150, 180); // Maintains large size
+        card.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                card.setBorder(BorderFactory.createLineBorder(GLOW_HEAL, 2));
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                card.setBorder(null);
+            }
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                tryApplyItem(s);
+                card.repaint();
+            }
+        });
         return card;
     }
 
-    /* ================= APPLY LOGIC ================= */
+    // Inside your Item usage logic (InventoryWindow or ItemType)
+    private void tryApplyItem(Soldier s) {
+        if (selectedItem == null) return;
 
-    private void tryApplyItem(Soldier s, JLabel statsLabel) {
-        if (selectedItem == null) {
-            infoLabel.setText("<html><font color='red'>Please select an item first!</font></html>");
-            return;
+        boolean success = false;
+
+        // Check conditions based on item type
+        switch (selectedItem) {
+            case MEDKIT -> success = s.heal();
+            case INSTANT_AVAILABLE -> success = s.makeAvailableInstantly();
+            case REVIVE -> success = s.revive();
         }
 
-        if (inventory.consume(selectedItem)) {
-            selectedItem.use(s); // Apply the logic (e.g., s.health += 20)
-
-            // Refresh visuals
+        if (success) {
+            inventory.consume(selectedItem);
+            SoundManager.heal();
             updateItemButton(itemButtons.get(selectedItem), selectedItem);
-            statsLabel.setText(String.format("HP: %d/%d | STR: %d | INT: %d",
-                    s.health, s.maxHealth, s.strength, s.intelligence));
-
-            infoLabel.setText("Applied " + selectedItem.displayName() + " to " + s.name);
-
-            // Update the main game UI soldier list
             ui.getSoldierPanel().repaint();
-
-            // If item ran out, deselect
-            if (inventory.get(selectedItem) <= 0) {
-                selectedItem = null;
-            }
+            infoLabel.setText("Used " + selectedItem.displayName() + " on " + s.name);
+            infoLabel.setForeground(Color.BLACK);
+        } else {
+            SoundManager.error();
+            infoLabel.setText("Cannot use " + selectedItem.displayName() + " on " + s.name);
+            infoLabel.setForeground(Color.RED);
         }
     }
 
     private JPanel buildBottom() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(infoLabel, BorderLayout.CENTER);
-
-        JButton close = new JButton("Finish");
-        close.addActionListener(e -> dispose());
-        panel.add(close, BorderLayout.EAST);
-        return panel;
+        JPanel p = new JPanel(new BorderLayout());
+        p.setOpaque(false);
+        JButton close = new JButton("Close");
+        close.addActionListener(e -> {
+            SoundManager.select();
+            dispose();
+        });
+        p.add(infoLabel, BorderLayout.WEST);
+        p.add(close, BorderLayout.CENTER);
+        return p;
     }
 }

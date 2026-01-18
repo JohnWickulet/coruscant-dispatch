@@ -2,8 +2,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LocationFactory {
-
-    // We can define tiers of locations
     public static Location getRandomLocation(int successCount) {
         List<Location> possible = new ArrayList<>();
 

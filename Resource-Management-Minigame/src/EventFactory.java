@@ -1,7 +1,6 @@
 public class EventFactory {
 
     public static Event create(String type, Location location,int x,int y) {
-        // Normalize type string to handle different save formats
         String eventType = type.toUpperCase().trim();
 
         switch (eventType) {

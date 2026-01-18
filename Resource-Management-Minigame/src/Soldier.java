@@ -3,9 +3,7 @@ import javax.swing.*;
 public abstract class Soldier {
 
     public enum State {AVAILABLE, DEPLOYED, RESTING,DOWNED}
-
     public String name;
-
     public int strength;
     public int mobility;
     public int intelligence;
@@ -51,7 +49,7 @@ public abstract class Soldier {
     }
 
     public int getExpToLevel() {
-        return 25 + level * 25;
+        return level * 25;
     }
 
     public void increaseStat(String stat) {
@@ -96,18 +94,32 @@ public abstract class Soldier {
         }
     }
 
-    public void revive() {
-        health = 1;
-        state = State.AVAILABLE;
+    public boolean revive() {
+        if(state == State.DOWNED) {
+            health = 1;
+            state = State.AVAILABLE;
+            return true;
+        }
+        return false;
     }
 
-    public void makeAvailableInstantly() {
-        state = State.AVAILABLE;
-        rest_time_remaining = 0;
+    public boolean makeAvailableInstantly() {
+        if(state==State.RESTING) {
+            state = State.AVAILABLE;
+            rest_time_remaining = 0;
+            return true;
+        }
+        return false;
     }
-    public void heal() {
-        if(health==1) health++;
+
+    public boolean heal() {
+        if(health < maxHealth && state!=State.DOWNED){
+            health++;
+            return true;
+        }
+        return false;
     }
+
     public void damage(){
         health--;
         if(health<=0) state=State.DOWNED;

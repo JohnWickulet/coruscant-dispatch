@@ -15,18 +15,21 @@ public class BottomPanel extends JPanel {
 
         inventoryBtn.addActionListener(e ->{
             ui.pauseGame();
+            SoundManager.select();
             new InventoryWindow(ui, game.inventory,game.squad);
             ui.resumeGame();
         });
 
         shopBtn.addActionListener(e -> {
             ui.pauseGame();
+            SoundManager.select();
             new ShopWindow(ui, game.shop,game);
             ui.resumeGame();
         });
 
         upgradeBtn.addActionListener(e ->{
             ui.pauseGame();
+            SoundManager.select();
             new UpgradeWindow(ui, game.squad);
             ui.resumeGame();
         });

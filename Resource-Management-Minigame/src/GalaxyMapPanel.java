@@ -37,16 +37,12 @@ public class GalaxyMapPanel extends JPanel {
     }
 
     private void setupControls() {
-        // --- ZOOM LOGIC ---
+        // ZOOM LOGIC
         addMouseWheelListener(e -> {
             double oldZoom = zoomFactor;
             if (e.getWheelRotation() < 0) zoomFactor *= 1.1; // Zoom In
             else zoomFactor /= 1.1; // Zoom Out
-
-            // Constraints
-            zoomFactor = Math.max(0.3, Math.min(zoomFactor, 3.0));
-
-            // Zoom towards mouse cursor
+            zoomFactor = Math.max(1.0, Math.min(zoomFactor, 3.0));
             double zoomDiv = zoomFactor / oldZoom;
             offsetX = e.getX() - zoomDiv * (e.getX() - offsetX);
             offsetY = e.getY() - zoomDiv * (e.getY() - offsetY);
@@ -54,8 +50,6 @@ public class GalaxyMapPanel extends JPanel {
             updateComponentPositions();
             repaint();
         });
-
-        // --- PANNING LOGIC ---
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -84,7 +78,6 @@ public class GalaxyMapPanel extends JPanel {
         Graphics2D g2 = (Graphics2D) g;
 
         if (backgroundImage != null) {
-            // Apply transformation for the background image
             AffineTransform at = new AffineTransform();
             at.translate(offsetX, offsetY);
             at.scale(zoomFactor, zoomFactor);
@@ -94,11 +87,8 @@ public class GalaxyMapPanel extends JPanel {
 
     public void updateComponentPositions() {
         for (EventCard card : eventCards) {
-            // ScreenPos = (WorldPos * Zoom) + Offset
             int nx = (int) (card.event.x * zoomFactor + offsetX);
             int ny = (int) (card.event.y * zoomFactor + offsetY);
-
-            // Adjust to center the card on the coordinate
             card.setLocation(nx - card.getWidth()/2, ny - card.getHeight()/2);
         }
     }
@@ -107,7 +97,6 @@ public class GalaxyMapPanel extends JPanel {
         eventCards.add(card);
         add(card);
 
-        // Use initial position
         int nx = (int) (card.event.x * zoomFactor + offsetX);
         int ny = (int) (card.event.y * zoomFactor + offsetY);
         card.setLocation(nx, ny);
@@ -124,13 +113,15 @@ public class GalaxyMapPanel extends JPanel {
     private void handleEventClick(EventCard card) {
         Event evt = card.event;
         if (evt.state == Event.State.AVAILABLE) {
+            SoundManager.select();
             GameUI parent = (GameUI) SwingUtilities.getWindowAncestor(this);
             parent.openDeploymentDialog(evt);
         } else if (evt.state == Event.State.RESOLVED) {
+            SoundManager.select();
             evt.resolve(game);
 
             String title = evt.isSuccess() ? "MISSION SUCCESS" : "MISSION FAILURE";
-            String message = "Operation: " + evt.name + "\n" + (evt.isSuccess() ? "Success!" : "Failed!");
+            String message = evt.name + "\n" + (evt.isSuccess() ? "Success!" : "Failed!");
             JOptionPane.showMessageDialog(this, message, title,
                     evt.isSuccess() ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
 
@@ -150,7 +141,7 @@ public class GalaxyMapPanel extends JPanel {
                 game.getActiveEvents().remove(card.event);
             }
         }
-        updateComponentPositions(); // Keep cards synced during logic ticks
+        updateComponentPositions();
         repaint();
     }
 

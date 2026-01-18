@@ -3,7 +3,7 @@ import java.util.*;
 
 public class saveGame {
 
-    // --- SAVING LOGIC ---
+    // SAVE METHOD
     public static void fullSave(Game game, String profileName) throws SQLException {
         try (Connection conn = DB_Connection.get()) {
             conn.setAutoCommit(false);
@@ -23,7 +23,7 @@ public class saveGame {
         }
     }
 
-    // --- LOADING LOGIC ---
+    // LOAD METHOD
     public Game fullLoad(String profileName) throws SQLException {
         Game game = new Game();
         Map<Integer, Soldier> idToSoldierMap = new HashMap<>();
@@ -40,10 +40,9 @@ public class saveGame {
         }
     }
 
-    // --- HELPER METHODS (SAVE) ---
+    // SAVE GAME INFO
 
     private static void saveGameStats(Connection conn, int pId, Game g) throws SQLException {
-        // Added succes_count to the state save
         String sql = "INSERT INTO game_state (profile_id, currency, patience, success_count) VALUES (?, ?, ?, ?) " +
                 "ON CONFLICT (profile_id) DO UPDATE SET currency=EXCLUDED.currency, patience=EXCLUDED.patience, success_count=EXCLUDED.success_count";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -56,7 +55,6 @@ public class saveGame {
     }
 
     private static int getOrInsertLocation(Connection conn, Location loc) throws SQLException {
-        // 1. Check if location already exists in Table 5
         String select = "SELECT location_id FROM locations WHERE name = ?";
         try (PreparedStatement ps = conn.prepareStatement(select)) {
             ps.setString(1, loc.name);
@@ -64,7 +62,6 @@ public class saveGame {
             if (rs.next()) return rs.getInt(1);
         }
 
-        // 2. If not, insert it (Static data for the universe)
         String insert = "INSERT INTO locations (name, danger_level, center_x, center_y) VALUES (?, ?, ?, ?) RETURNING location_id";
         try (PreparedStatement ps = conn.prepareStatement(insert)) {
             ps.setString(1, loc.name);
@@ -77,8 +74,8 @@ public class saveGame {
         }
     }
 
+    // SAVE TROOPS
     private static void saveSoldiers(Connection conn, int pId, List<Soldier> soldiers) throws SQLException {
-        // Delete existing so we don't duplicate when resaving
         try (PreparedStatement del = conn.prepareStatement("DELETE FROM soldiers WHERE profile_id = ?")) {
             del.setInt(1, pId);
             del.executeUpdate();
@@ -112,18 +109,16 @@ public class saveGame {
         }
     }
 
+    // SAVE ACTIVE EVENTS
     private static void saveEvents(Connection conn, int pId, List<Event> events) throws SQLException {
-        // Cascade deletion handled via execution order or DB constraints
         executeDelete(conn, "DELETE FROM event_deployments WHERE event_id IN (SELECT id FROM active_events WHERE profile_id = ?)", pId);
         executeDelete(conn, "DELETE FROM active_events WHERE profile_id = ?", pId);
 
-        // Updated SQL to include map_x and map_y
         String sqlEv = "INSERT INTO active_events (profile_id, event_type, event_name, location_id, time_left, state, map_x, map_y) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
 
         for (Event e : events) {
             int locId = getOrInsertLocation(conn, e.location);
-
             int eventId;
             try (PreparedStatement ps = conn.prepareStatement(sqlEv)) {
                 ps.setInt(1, pId);
@@ -146,11 +141,11 @@ public class saveGame {
         }
     }
 
+    // SAVE LINK BETWEEN ACTIVE EVENT AND DEPLOYED TROOPS
     private static void saveSoldierLinks(Connection conn, int eventId, List<Soldier> deployedSoldiers) throws SQLException {
         String sqlDep = "INSERT INTO event_deployments (event_id, soldier_id) VALUES (?, ?)";
 
         for (Soldier s : deployedSoldiers) {
-            // Only link if the soldier has been saved and has a valid database ID
             if (s.getDatabaseId() > 0) {
                 try (PreparedStatement psDep = conn.prepareStatement(sqlDep)) {
                     psDep.setInt(1, eventId);
@@ -161,28 +156,27 @@ public class saveGame {
         }
     }
 
+    // LOAD TROOPS
     private void loadSoldiers(Connection conn, int pId, Game g, Map<Integer, Soldier> map) throws SQLException {
         String sql = "SELECT * FROM soldiers WHERE profile_id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, pId);
             try (ResultSet rs = ps.executeQuery()) {
-                g.squad.soldiers.clear(); // Remove default initialization soldiers
+                g.squad.soldiers.clear();
 
                 while (rs.next()) {
-                    // 1. Use your factory to create the specific subclass instance
+                    // Create troop subclass
                     String dbClass=rs.getString("troop_class");
                     String gameClass=dbClass.replace(" ","_");
                     Soldier s = SoldierFactory.create(gameClass, rs.getString("name"));
 
-                    // 2. Map standard stats
+                    // Give the troop its stats and status
                     s.setDatabaseId(rs.getInt("id"));
                     s.strength = rs.getInt("strength");
                     s.mobility = rs.getInt("mobility");
                     s.intelligence = rs.getInt("intelligence");
                     s.stealth = rs.getInt("stealth");
                     s.charisma = rs.getInt("charisma");
-
-                    // 3. Map status and health
                     s.health = rs.getInt("health");
                     s.maxHealth = rs.getInt("max_health");
                     s.level = rs.getInt("level");
@@ -190,7 +184,7 @@ public class saveGame {
                     s.state = Soldier.State.valueOf(rs.getString("state"));
                     s.rest_time_remaining = rs.getDouble("rest_time_remaining");
 
-                    // 4. Add to Game and the Lookup Map (for Event reconstruction)
+                    // Add troop to game and active events
                     g.squad.addSoldier(s);
                     map.put(s.getDatabaseId(), s);
                 }
@@ -198,8 +192,9 @@ public class saveGame {
         }
     }
 
+    // LOAD ACTIVE EVENTS
     private void loadEvents(Connection conn, int pId, Game g, Map<Integer, Soldier> lookup) throws SQLException {
-        // Updated query to select map_x and map_y
+
         String sqlEvent = "SELECT e.*, l.name as loc_name, l.danger_level, l.center_x, l.center_y " +
                 "FROM active_events e " +
                 "JOIN locations l ON e.location_id = l.location_id " +
@@ -210,20 +205,15 @@ public class saveGame {
             ResultSet rsEv = stmtEv.executeQuery();
 
             while (rsEv.next()) {
-                // Extract coordinates from DB
                 int x = rsEv.getInt("map_x");
                 int y = rsEv.getInt("map_y");
-
                 Location loc = new Location(rsEv.getString("loc_name"), rsEv.getDouble("danger_level"),rsEv.getInt("center_x"),rsEv.getInt("center_y"));
-
-                // Pass coordinates to factory
                 Event e = EventFactory.create(rsEv.getString("event_type"), loc, x, y);
                 if (e == null) continue;
-
                 e.timeLeft = rsEv.getDouble("time_left");
                 int eventId = rsEv.getInt("id");
 
-                // Reconstruct deployments
+                // Get the deployed soldiers for this event
                 List<Soldier> deployedForThisEvent = new ArrayList<>();
                 String sqlDep = "SELECT soldier_id FROM event_deployments WHERE event_id = ?";
 
@@ -246,6 +236,7 @@ public class saveGame {
         }
     }
 
+    // LOAD GAME INFO
     private void loadGameStats(Connection conn, int pId, Game game) throws SQLException {
         String sql = "SELECT currency, patience FROM game_state WHERE profile_id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -263,7 +254,7 @@ public class saveGame {
         }
     }
 
-    // Boilerplate ID lookups
+    // SAVE OF CREATE THE PROFILE
     private static int getOrCreateProfile(Connection conn, String name) throws SQLException {
         String sql = "INSERT INTO profiles (name) VALUES (?) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -274,6 +265,7 @@ public class saveGame {
         }
     }
 
+    // LOAD THE PROFILE
     private int getProfileId(Connection conn, String name) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM profiles WHERE name = ?")) {
             ps.setString(1, name);
@@ -283,8 +275,8 @@ public class saveGame {
         }
     }
 
+    // SAVE INVENTORY
     private static void saveInventory(Connection conn, int pId, Inventory inv) throws SQLException {
-        // Clean old inventory for this profile
         executeDelete(conn, "DELETE FROM inventory WHERE profile_id = ?", pId);
 
         String sql = "INSERT INTO inventory (profile_id, item_id, quantity) " +
@@ -300,6 +292,7 @@ public class saveGame {
         }
     }
 
+    // LOAD INVENTORY
     private void loadInventory(Connection conn, int pId, Inventory inv) throws SQLException {
         String sql = "SELECT d.name, i.quantity FROM inventory i " +
                 "JOIN item_definitions d ON i.item_id = d.item_id " +
@@ -315,6 +308,8 @@ public class saveGame {
             }
         }
     }
+
+
     public List<String> getAllProfileNames() {
         List<String> names = new ArrayList<>();
         String sql = "SELECT name FROM profiles ORDER BY name ASC";
@@ -329,6 +324,8 @@ public class saveGame {
         }
         return names;
     }
+
+
     public void deleteProfile(String profileName) throws SQLException {
         String getPId = "SELECT id FROM profiles WHERE name = ?";
         String delGameState = "DELETE FROM game_state WHERE profile_id = ?";

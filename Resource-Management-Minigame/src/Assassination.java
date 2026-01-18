@@ -11,7 +11,7 @@ public class Assassination extends Event {
 
     @Override
     public void onSuccess(Game game,List<Soldier> deployed) {
-        game.addCurrency(50);
+        game.addCurrency(25);
         game.gainPatience(10);
         game.increaseSuccess();
         for (Soldier s : deployed) {

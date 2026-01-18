@@ -1,43 +1,31 @@
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
 
 public class SoldierCard extends JPanel {
 
     private final Soldier soldier;
     private boolean selected = false;
-    private double flowProgress = 0.0; // 0.0 -> 1.0 for resting bar
+    private int cardW, cardH;
 
     public SoldierCard(Soldier soldier) {
-        setOpaque(false);
+        this(soldier, 150, 180); // Default size for main panels
+    }
+
+    public SoldierCard(Soldier soldier, int width, int height) {
         this.soldier = soldier;
-        setPreferredSize(new Dimension(140, 160));
+        this.cardW = width;
+        this.cardH = height;
+        setPreferredSize(new Dimension(cardW, cardH));
+        setOpaque(false);
         setLayout(new BorderLayout());
-        setBorder(new LineBorder(Color.GRAY, 2));
-        setBackground(Color.WHITE);
-
-        JLabel nameLabel = new JLabel(soldier.name, SwingConstants.CENTER);
-        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD));
-        add(nameLabel, BorderLayout.SOUTH);
-
-        JLabel imageLabel = new JLabel(soldier.portrait, SwingConstants.CENTER);
-        Image img = soldier.portrait.getImage();
-        Image scaled = img.getScaledInstance(150, 200, Image.SCALE_SMOOTH);
-        imageLabel.setIcon(new ImageIcon(scaled));
-        add(imageLabel, BorderLayout.CENTER);
-
-        if (soldier.state == Soldier.State.RESTING && soldier.rest_time > 0) {
-            flowProgress = 1.0 - (double) soldier.rest_time_remaining / soldier.rest_time;
-            repaint();
-        }
     }
 
     public Soldier getSoldier() { return soldier; }
-    public boolean isSelected() { return selected; }
 
     public void toggle() {
         selected = !selected;
-        setBorder(new LineBorder(selected ? Color.GREEN : Color.GRAY, 3));
         repaint();
     }
 
@@ -49,66 +37,65 @@ public class SoldierCard extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        /* ===== BASE STATE COLOR ===== */
+        //BACKGROUND STATE COLOR
         switch (soldier.state) {
-            case DEPLOYED -> {
-                g2.setColor(new Color(163, 157, 157));
-                g2.fillRect(0, 0, w, h);
+            case DEPLOYED -> g2.setColor(new Color(160, 160, 160));
+            case RESTING -> g2.setColor(new Color(73, 145, 193));
+            case DOWNED -> g2.setColor(new Color(50, 50, 50));
+            default -> g2.setColor(Color.WHITE);
+        }
+        g2.fillRect(0, 0, w, h);
+
+        //PORTRAIT SCALING
+        if (soldier.portrait != null) {
+            Image img = soldier.portrait.getImage();
+            int nameBarHeight = (h > 100) ? 25 : 14;
+            int maxImgW = w;
+            int maxImgH = h - nameBarHeight;
+            double scale = Math.min((double) maxImgW / 450, (double) maxImgH / 500);
+            int imgW = (int) (450 * scale);
+            int imgH = (int) (500 * scale);
+            int imgX = (w - imgW) / 2;
+            int imgY = 0;
+
+            BufferedImage bi = new BufferedImage(imgW, imgH, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D gbi = bi.createGraphics();
+            gbi.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            gbi.drawImage(img, 0, 0, imgW, imgH, null);
+            gbi.dispose();
+
+            if (soldier.health < soldier.maxHealth) {
+                RescaleOp rop = new RescaleOp(
+                        new float[]{1.3f, 0.7f, 0.7f, 1.0f},
+                        new float[]{35f, 0f, 0f, 0f},
+                        null
+                );
+                bi = rop.filter(bi, null);
             }
-            case RESTING -> {
-                g2.setColor(new Color(73, 145, 193));
-                g2.fillRect(0, 0, w, h);
-            }
-            case AVAILABLE -> {
-                g2.setColor(Color.WHITE);
-                g2.fillRect(0, 0, w, h);
-            }
-            case DOWNED -> {
-                g2.setColor(new Color(84, 91, 96, 255));
-                g2.fillRect(0, 0, w, h);
-            }
+            g2.drawImage(bi, imgX, imgY, null);
         }
 
-        /* ===== RESTING FLOW OVERLAY ===== */
+        //RESTING FLOW
         if (soldier.state == Soldier.State.RESTING && soldier.rest_time > 0) {
-            double progress =
-                    1.0 - (double) soldier. rest_time_remaining / soldier.rest_time;
-
-            int barWidth = (int) (w * progress);
-
-            GradientPaint gp = new GradientPaint(
-                    w - barWidth, 0, new Color(255, 255, 255, 120),
-                    w, 0, new Color(180, 210, 255, 40)
-            );
-
-            g2.setPaint(gp);
-            g2.fillRect(w - barWidth, 0, barWidth, h);
+            double ratio = soldier.rest_time_remaining / soldier.rest_time;
+            int barW = (int) (w * ratio);
+            g2.setPaint(new GradientPaint(0, 0, new Color(80, 140, 246, 200), barW, 0, new Color(180, 210, 255, 40)));
+            g2.fillRect(0, 0, barW, h);
         }
 
-        /* ===== BORDER ===== */
-        g2.setColor(selected ? Color.GREEN : Color.GRAY);
-        g2.setStroke(new BasicStroke(3));
-        g2.drawRect(1, 1, w - 3, h - 3);
-
-        /* ===== STATE TEXT ===== */
+        //NAME OVERLAY
+        int barH = (h > 100) ? 25 : 14;
+        g2.setColor(new Color(255, 255, 255, 200));
+        g2.fillRect(0, h - barH, w, barH);
         g2.setColor(Color.BLACK);
-        g2.setFont(new Font("Arial", Font.BOLD, 12));
+        g2.setFont(new Font("SansSerif", Font.BOLD, (h > 100) ? 11 : 9));
+        FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(soldier.name, (w - fm.stringWidth(soldier.name)) / 2, h - (barH/3));
 
-        String stateText = switch (soldier.state) {
-            case DEPLOYED -> "Deployed";
-            case RESTING -> "Resting";
-            case DOWNED -> "Downed";
-            default -> "";
-        };
-
-        if (!stateText.isEmpty()) {
-            FontMetrics fm = g2.getFontMetrics();
-            int x = (w - fm.stringWidth(stateText)) / 2;
-            g2.drawString(stateText, x, 16);
-        }
-
+        //SELECTION BORDER
+        g2.setStroke(new BasicStroke(3));
+        g2.setColor(selected ? Color.GREEN : Color.GRAY);
+        g2.drawRect(1, 1, w - 3, h - 3);
         g2.dispose();
-        super.paintComponent(g); // paints child components LAST
     }
-
 }

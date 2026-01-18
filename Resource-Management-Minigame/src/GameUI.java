@@ -2,10 +2,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 
-public class GameUI extends JFrame {
+public class GameUI extends JFrame implements GameStateListener {
     private String profileName;
     private final Game game;
-    private final saveGame saveManager = new saveGame(); // Cleaned up variable name
     private final GalaxyMapPanel map;
     private final BottomPanel bottomPanel;
     private final SoldierCardsPanel soldierPanel;
@@ -19,49 +18,41 @@ public class GameUI extends JFrame {
         this.game = game;
         this.profileName = profileName;
 
-        setTitle("Star Wars Dispatch - Profile: " + profileName);
+        // REGISTER AS LISTENER
+        this.game.addGameStateListener(this);
 
-        // Set to a large size but not necessarily full screen to allow window dragging
+        setTitle("Star Wars Dispatch - Profile: " + profileName);
         setSize(1200, 800);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Initialize game only if it's brand new
         if(game.squad.soldiers.isEmpty()) {
             game.initialize();
         }
-
         setupMenuBar(profileName);
 
-        // UI Components
         map = new GalaxyMapPanel(game);
-        add(map, BorderLayout.CENTER); // Map stays in the center
+        add(map, BorderLayout.CENTER);
 
-        // Ensure map is synced with current game state
-        if (!game.getActiveEvents().isEmpty()) {
-            map.syncWithGame();
-        }
-
-        // Side Panel for Soldiers
+        // Troop panel setup
         soldierPanel = new SoldierCardsPanel(game.squad);
         JScrollPane soldierScroll = new JScrollPane(soldierPanel);
-        soldierScroll.setPreferredSize(new Dimension(200, getHeight()));
-        soldierScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        soldierScroll.setPreferredSize(new Dimension(340, getHeight()));
+        soldierScroll.setBorder(BorderFactory.createEmptyBorder());
         add(soldierScroll, BorderLayout.EAST);
 
-        // Bottom UI for Currency/Stats
         bottomPanel = new BottomPanel(game, this);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        eventManager = new EventManager(game, map, 8);
-
+        eventManager = new EventManager(game, map,game.getSpawnInterval());
         startTicking();
         setVisible(true);
     }
 
-    public GalaxyMapPanel getMap(){
-        return map;
+    @Override
+    public void onSquadChanged() {
+        soldierPanel.rebuildCards();
     }
 
     private void startTicking() {
@@ -69,13 +60,14 @@ public class GameUI extends JFrame {
             game.tick(DT);
             map.tick(DT);
             eventManager.tick(DT);
-
-            // Repaint components to show updated timers/progress bars
             soldierPanel.repaint();
             bottomPanel.repaint();
             map.repaint();
+            if(game.getPatience() <= 0) {
+                triggerGameOver();
+            }
         });
-        resumeGame();
+        tickTimer.start();
     }
 
     public void openDeploymentDialog(Event event) {
@@ -102,7 +94,7 @@ public class GameUI extends JFrame {
     private void setupMenuBar(String profileName) {
         JMenuBar menuBar = new JMenuBar();
 
-        // --- SYSTEM MENU ---
+        //Menu
         JMenu gameMenu = new JMenu("System");
 
         JMenuItem saveItem = new JMenuItem("Save Game");
@@ -114,10 +106,8 @@ public class GameUI extends JFrame {
                 JOptionPane.showMessageDialog(this, "Save Error: " + ex.getMessage());
             }
         });
-
         JMenuItem mainMenuItem = new JMenuItem("Exit to Main Menu");
         mainMenuItem.addActionListener(e -> {
-            // Specify JOptionPane.YES_NO_OPTION to remove the "Cancel" button
             int choice = JOptionPane.showConfirmDialog(
                     this,
                     "Return to Main Menu? (Unsaved progress will be lost)",
@@ -145,5 +135,32 @@ public class GameUI extends JFrame {
         gameMenu.add(exitItem);
         menuBar.add(gameMenu);
         setJMenuBar(menuBar);
+    }
+    private void triggerGameOver() {
+        pauseGame();
+         SoundManager.playSound("lose.wav");
+
+        String message = "The ISB has had enough of your incompetence.\n" +
+                "You have been relieved of your duty and will be sent to Narkina 5 detention facility.\n\n" +
+                "Final Score: " + game.getSuccess();
+
+        Object[] options = {"Return to Menu", "Exit to Desktop"};
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                message,
+                "GAME OVER",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.ERROR_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        this.dispose();
+        if (choice == JOptionPane.YES_OPTION) {
+            new GameLauncher().setVisible(true);
+        } else {
+            System.exit(0);
+        }
     }
 }
