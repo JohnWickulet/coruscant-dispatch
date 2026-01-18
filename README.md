@@ -102,6 +102,9 @@
     public Location(String name, double diff, int x, int y): standard constructor
     public Point getRandomPointInside(): generates a random point inside the circle of the location used for setting the coordinates of the event
 
+### LocationFactory
+    public static Location getRandomLocation: returns a location based on how successful your game run is
+
 ### Inventory
 #### Variables
     private final Map<ItemType, Integer> items: Map of the 3 item types (Bacta spray, Adrenaline Shot, Bacta Tank)
@@ -148,13 +151,62 @@
     public List<String> getAllProfileNames(): returns all profiles
     public void deleteProfile: deletes a profile and all data related to it
     private static void executeDelete: helper method for deleteProfile
-
-###
     
+## (Technically still Database related) Factories:
+    In order to generate the soldiers and events, i have 2 classes meant for this
 
+## UI stuff (Swing based):
+### GameLauncher
+#### Variables
+    private final saveGame saveManager;
+    private JList<String> saveList;
+    private DefaultListModel<String> listModel;
+#### Methods
+    public GameLauncher: opens a window which allows you to start a new game (which prompts you to write a name for the savefile) or select a savefile which lets you load or delete it
+    private void refreshSaveList: syncs the UI to the database
+    private void startGame: transitions from the main menu to actually playing the game
+    public static void main: starts the app
+### GameUI
+#### Variables
+    private String profileName;
+    private final Game game;
+    private final GalaxyMapPanel map;
+    private final BottomPanel bottomPanel;
+    private final SoldierCardsPanel soldierPanel;
+    private final EventManager eventManager;
+    private Timer tickTimer;
+    private static final int TICK_MS;
+    private static final double DT;
+#### Methods
+    public GameUI: 
+        opens the window for the actual gameplay, initializes the game if it's a new profile
+        consists of 4 main parts: GalaxyMapPanel, BottomPanel, SoldierCardPanel and MenuBar
+    private void startTicking: starts the timers of all elements which have them and checks if the game is over
+    public void openDeploymentDialog: (code debt aside) stops all timers and enters the deployment window for the selected event
+    pause/resume game: stop/start the timer
+    private void setupMenuBar: sets up the MenuBar which allows you to save the game, exit to main menu or quit the app
+    private void triggerGameOver: stops everything and pops up a window which shows your score and allows you go back to the main menu or quit the app
     
+### GalaxyMapPanel
+#### Variables
+    private final List<EventCard> eventCards = new ArrayList<>();
+    public Game game;
+    private Image backgroundImage;
+    private double zoomFactor = 1.0;
+    private double offsetX = 0;
+    private double offsetY = 0;
+    private Point mousePt;
+#### Methods
+    public GalaxyMapPanel: sets up the map
+    private void setupControls: prepares zooming in/out of the map and moving it around
+    public void updateComponentPositions: updates the event positions when zooming/moving around
+    public void addEvent: places an event on the map
+    private void handleEventClick: handles clicking on the event at its various states
+    public void tick(double dt): ticks event timers
+    private void removeEvent: removes the event visually
     
-
+### BottomPanel
+    public BottomPanel
 
 
 
