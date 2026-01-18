@@ -4,6 +4,10 @@
 + The game features an inventory system, a shop system, an upgrade system and a promotion mechanic.
 + The main goal is to manage to survive for as long as possible as losing too many events will lead to a game over.
 
+# Diagram
+This diagram is supposed to show most of the relations inbetween the classes. (Some were not included due to lack of space)
+<img width="1135" height="1058" alt="OOP (1)" src="https://github.com/user-attachments/assets/75d65547-d72c-4e8e-ba88-ca534575a47c" />
+
 # Java classes utilized:
 ## For the Technical side:
 ### Game:
