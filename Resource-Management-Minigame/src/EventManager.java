@@ -1,10 +1,10 @@
 import java.util.Random;
 
-public class EventManager {
+public class EventManager implements GameStateListener{
 
     private final Game game;
     private final GalaxyMapPanel map;
-    private final double spawnInterval;
+    private double spawnInterval;
     private double spawnTimer;
     private final Random rng;
 
@@ -14,6 +14,21 @@ public class EventManager {
         this.spawnInterval = spawnIntervalSeconds;
         this.spawnTimer = spawnIntervalSeconds;
         this.rng = new Random();
+        this.game.addGameStateListener(this);
+    }
+
+    @Override
+    public void onDiffChange(double newInterval) {
+        this.spawnInterval = newInterval;
+        if (spawnTimer > spawnInterval) {
+            spawnTimer = spawnInterval;
+        }
+        System.out.println("Difficulty increased! New spawn interval: " + spawnInterval);
+    }
+
+    @Override
+    public void onSquadChanged(){
+        //do nothing
     }
 
     public void tick(double dt) {

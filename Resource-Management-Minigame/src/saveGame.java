@@ -61,13 +61,9 @@ public class saveGame {
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return rs.getInt(1);
         }
-
-        String insert = "INSERT INTO locations (name, danger_level, center_x, center_y) VALUES (?, ?, ?, ?) RETURNING location_id";
+        String insert = "INSERT INTO locations (name) VALUES (?) RETURNING location_id";
         try (PreparedStatement ps = conn.prepareStatement(insert)) {
             ps.setString(1, loc.name);
-            ps.setDouble(2, loc.getDiff());
-            ps.setInt(3,loc.centerX);
-            ps.setInt(4,loc.centerY);
             ResultSet rs = ps.executeQuery();
             rs.next();
             return rs.getInt(1);
@@ -122,7 +118,7 @@ public class saveGame {
             int eventId;
             try (PreparedStatement ps = conn.prepareStatement(sqlEv)) {
                 ps.setInt(1, pId);
-                ps.setString(2, e.getClass().getSimpleName().replace("Rebel", "").replace("Event", ""));
+                ps.setString(2, e.getClass().getSimpleName());
                 ps.setString(3, e.name);
                 ps.setInt(4, locId);
                 ps.setDouble(5, e.timeLeft);
@@ -195,7 +191,7 @@ public class saveGame {
     // LOAD ACTIVE EVENTS
     private void loadEvents(Connection conn, int pId, Game g, Map<Integer, Soldier> lookup) throws SQLException {
 
-        String sqlEvent = "SELECT e.*, l.name as loc_name, l.danger_level, l.center_x, l.center_y " +
+        String sqlEvent = "SELECT e.*, l.name as loc_name " +
                 "FROM active_events e " +
                 "JOIN locations l ON e.location_id = l.location_id " +
                 "WHERE e.profile_id = ?";
@@ -207,7 +203,7 @@ public class saveGame {
             while (rsEv.next()) {
                 int x = rsEv.getInt("map_x");
                 int y = rsEv.getInt("map_y");
-                Location loc = new Location(rsEv.getString("loc_name"), rsEv.getDouble("danger_level"),rsEv.getInt("center_x"),rsEv.getInt("center_y"));
+                Location loc = LocationFactory.getLocationByName(rsEv.getString("loc_name"));
                 Event e = EventFactory.create(rsEv.getString("event_type"), loc, x, y);
                 if (e == null) continue;
                 e.timeLeft = rsEv.getDouble("time_left");

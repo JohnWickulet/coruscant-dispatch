@@ -17,6 +17,7 @@ public abstract class Event {
     protected State state = State.AVAILABLE;
     private static final Random rand = new Random();
     protected boolean success = false;
+    protected boolean expirecheck=false;
 
     public Event(String name, String description, Location location,int x,int y,
                  double duration, double timeDeploy, int maxDeploy, int checks_required,
@@ -51,7 +52,9 @@ public abstract class Event {
             timeLeft -= dt;
             if (timeLeft <= 0) {
                 timeLeft = 0;
-                if (state == State.AVAILABLE) state = State.EXPIRED;
+                if (state == State.AVAILABLE){
+                    state = State.EXPIRED;
+                }
                 else state = State.RESOLVED;
             }
         }
@@ -105,4 +108,7 @@ public abstract class Event {
 
     public abstract void onSuccess(Game game,List<Soldier> deployed);
     public abstract void onFailure(Game game,List<Soldier> deployed);
+    public void onExpire(Game game){
+        game.losePatience(20);
+    }
 }

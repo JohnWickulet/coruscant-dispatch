@@ -20,5 +20,8 @@ public class Inspection extends Event {
     @Override
     public void onFailure(Game game,List<Soldier> deployed) {
         game.losePatience(10);
+        for (Soldier s : deployed) {
+            s.damage();
+        }
     }
 }

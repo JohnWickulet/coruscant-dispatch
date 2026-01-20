@@ -35,10 +35,11 @@ public class Game {
 
     public void gainSupport() {
         int initialSize = squad.soldiers.size();
+        double oldInterval = spawnInterval;
         switch (success_count) {
             case 5-> {
                 squad.addSoldier(generateNewTrooper());
-                spawnInterval = 11.0;
+                spawnInterval = 10.0;
             }
             case 10-> {
                 squad.addSoldier(generateNewTrooper());
@@ -56,6 +57,11 @@ public class Game {
         if (squad.soldiers.size() > initialSize) {
             notifySquadChanged();
         }
+        if (spawnInterval != oldInterval) {
+            for (GameStateListener l : listeners) {
+                l.onDiffChange(spawnInterval);
+            }
+        }
     }
 
     public double getSpawnInterval(){
@@ -67,7 +73,13 @@ public class Game {
         while (it.hasNext()) {
             Event e = it.next();
             e.tick(dt);
-            if (e.remove) it.remove();
+            if(e.state == Event.State.EXPIRED && !e.expirecheck){
+                e.onExpire(this);
+                e.expirecheck=true;
+            }
+            if (e.remove) {
+                it.remove();
+            }
         }
         for (Soldier s : squad.soldiers) {
             s.tick(dt);

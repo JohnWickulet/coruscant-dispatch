@@ -55,6 +55,11 @@ public class GameUI extends JFrame implements GameStateListener {
         soldierPanel.rebuildCards();
     }
 
+    @Override
+    public void onDiffChange(double newInterval){
+        //do nothing
+    }
+
     private void startTicking() {
         tickTimer = new Timer(TICK_MS, e -> {
             game.tick(DT);

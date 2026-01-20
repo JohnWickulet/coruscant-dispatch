@@ -25,6 +25,7 @@ public class RebelSabotage extends Event {
         game.losePatience(20);
         for (Soldier s : deployed) {
             s.damage();
+            s.damage();
         }
     }
 }
